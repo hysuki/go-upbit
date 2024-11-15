@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"upbit.yougcha.bot/pkg/upbit/rest/exchange"
+	"upbit.yougcha.bot/pkg/upbit/rest/quotation"
 )
 
 const (
@@ -24,6 +25,7 @@ type Client interface {
 	Post(path string, body interface{}) ([]byte, error)
 	Delete(path string, params map[string]string) ([]byte, error)
 	GetExchange() *exchange.Exchange
+	GetQuotation() *quotation.Quotation
 }
 
 // APIError는 Upbit API 에러 응답을 나타냅니다.
@@ -47,6 +49,7 @@ type client struct {
 	tokenGen   TokenGenerator
 	baseURL    string
 	Exchange   *exchange.Exchange
+	Quotation  *quotation.Quotation
 }
 
 // NewClient는 새로운 REST API 클라이언트를 생성합니다.
@@ -57,6 +60,7 @@ func NewClient(tokenGen TokenGenerator) *client {
 		baseURL:    BaseURL,
 	}
 	c.Exchange = exchange.NewExchange(c)
+	c.Quotation = quotation.NewQuotation(c)
 	return c
 }
 
@@ -198,4 +202,8 @@ func (c *client) Delete(path string, params map[string]string) ([]byte, error) {
 
 func (c *client) GetExchange() *exchange.Exchange {
 	return c.Exchange
+}
+
+func (c *client) GetQuotation() *quotation.Quotation {
+	return c.Quotation
 }
