@@ -63,33 +63,33 @@ const (
 
 // CreateOrderRequest는 주문 생성 요청 파라미터를 정의합니다
 type CreateOrderRequest struct {
-	Market      string      `json:"market"`        // 마켓 ID (필수)
-	Side        OrderSide   `json:"side"`          // 주문 종류 (필수)
-	Volume      string      `json:"volume"`        // 주문량 (지정가, 시장가 매도 시 필수)
-	Price       string      `json:"price"`         // 주문 가격 (지정가, 시장가 매수 시 필수)
-	OrderType   OrderType   `json:"ord_type"`      // 주문 타입 (필수)
-	Identifier  string      `json:"identifier"`    // 조회용 사용자 지정값 (선택)
-	TimeInForce TimeInForce `json:"time_in_force"` // IOC, FOK 주문 설정
+	Market      string      `json:"market,omitempty"`        // 마켓 ID (필수)
+	Side        OrderSide   `json:"side,omitempty"`          // 주문 종류 (필수)
+	Volume      string      `json:"volume,omitempty"`        // 주문량 (지정가, 시장가 매도 시 필수)
+	Price       string      `json:"price,omitempty"`         // 주문 가격 (지정가, 시장가 매수 시 필수)
+	OrderType   OrderType   `json:"ord_type,omitempty"`      // 주문 타입 (필수)
+	Identifier  string      `json:"identifier,omitempty"`    // 조회용 사용자 지정값 (선택)
+	TimeInForce TimeInForce `json:"time_in_force,omitempty"` // IOC, FOK 주문 설정
 }
 
 // Order는 주문 정보를 나타냅니다
 type Order struct {
-	UUID            string    `json:"uuid"`             // 주문의 고유 아이디
-	Side            OrderSide `json:"side"`             // 주문 종류
-	OrderType       OrderType `json:"ord_type"`         // 주문 방식
-	Price           string    `json:"price"`            // 주문 당시 화폐 가격
-	State           string    `json:"state"`            // 주문 상태
-	Market          string    `json:"market"`           // 마켓의 유일키
-	CreatedAt       string    `json:"created_at"`       // 주문 생성 시간
-	Volume          string    `json:"volume"`           // 사용자가 입력한 주문 양
-	RemainingVolume string    `json:"remaining_volume"` // 체결 후 남은 주문 양
-	ReservedFee     string    `json:"reserved_fee"`     // 수수료로 예약된 비용
-	RemainingFee    string    `json:"remaining_fee"`    // 남은 수수료
-	PaidFee         string    `json:"paid_fee"`         // 사용된 수수료
-	Locked          string    `json:"locked"`           // 거래에 사용중인 비용
-	ExecutedVolume  string    `json:"executed_volume"`  // 체결된 양
-	TradesCount     int       `json:"trades_count"`     // 해당 주문에 걸린 체결 수
-	TimeInForce     string    `json:"time_in_force"`    // IOC, FOK 설정
+	UUID            string    `json:"uuid,omitempty"`             // 주문의 고유 아이디
+	Side            OrderSide `json:"side,omitempty"`             // 주문 종류
+	OrderType       OrderType `json:"ord_type,omitempty"`         // 주문 방식
+	Price           string    `json:"price,omitempty"`            // 주문 당시 화폐 가격
+	State           string    `json:"state,omitempty"`            // 주문 상태
+	Market          string    `json:"market,omitempty"`           // 마켓의 유일키
+	CreatedAt       string    `json:"created_at,omitempty"`       // 주문 생성 시간
+	Volume          string    `json:"volume,omitempty"`           // 사용자가 입력한 주문 양
+	RemainingVolume string    `json:"remaining_volume,omitempty"` // 체결 후 남은 주문 양
+	ReservedFee     string    `json:"reserved_fee,omitempty"`     // 수수료로 예약된 비용
+	RemainingFee    string    `json:"remaining_fee,omitempty"`    // 남은 수수료
+	PaidFee         string    `json:"paid_fee,omitempty"`         // 사용된 수수료
+	Locked          string    `json:"locked,omitempty"`           // 거래에 사용중인 비용
+	ExecutedVolume  string    `json:"executed_volume,omitempty"`  // 체결된 양
+	TradesCount     int       `json:"trades_count,omitempty"`     // 해당 주문에 걸린 체결 수
+	TimeInForce     string    `json:"time_in_force,omitempty"`    // IOC, FOK 설정
 }
 
 // CancelOrderParams는 주문 취소를 위한 파라미터입니다.
@@ -201,7 +201,11 @@ func (e *Exchange) GetOrdersByID(params *OrderByIDParams) ([]Order, error) {
 }
 
 // CreateOrder는 새로운 주문을 생성니다
-func (e *Exchange) CreateOrder(request CreateOrderRequest) (*Order, error) {
+func (e *Exchange) CreateOrder(request *CreateOrderRequest) (*Order, error) {
+	if request == nil {
+		return nil, ErrInvalidParams
+	}
+
 	resp, err := e.Client.Post("/orders", request)
 	if err != nil {
 		return nil, err

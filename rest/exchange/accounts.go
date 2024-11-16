@@ -9,17 +9,17 @@ import (
 // 참고: https://docs.upbit.com/reference/%EC%A0%84%EC%B2%B4-%EA%B3%84%EC%A2%8C-%EC%A1%B0%ED%9A%8C
 type Accounts struct {
 	// Currency는 화폐를 의미하는 영문 대문자 코드입니다.
-	Currency string `json:"currency"`
+	Currency string `json:"currency,omitempty"`
 	// Balance는 주문가능 금액/수량입니다.
-	Balance string `json:"balance"`
+	Balance string `json:"balance,omitempty"`
 	// Locked는 주문 중 묶여있는 금액/수량입니다.
-	Locked string `json:"locked"`
+	Locked string `json:"locked,omitempty"`
 	// AvgBuyPrice는 매수평균가입니다.
-	AvgBuyPrice string `json:"avg_buy_price"`
+	AvgBuyPrice string `json:"avg_buy_price,omitempty"`
 	// AvgBuyPriceModified는 매수평균가 수정 여부입니다.
 	AvgBuyPriceModified bool `json:"avg_buy_price_modified"`
 	// UnitCurrency는 평단가 기준 화폐입니다.
-	UnitCurrency string `json:"unit_currency"`
+	UnitCurrency string `json:"unit_currency,omitempty"`
 }
 
 // GetAccounts는 사용자의 전체 계좌 정보를 조회합니다.

@@ -10,53 +10,51 @@ import (
 	"github.com/hysuki/go-upbit/auth"
 )
 
-// BaseClient은 WebSocket 연결을 관리하는 구조체입니다
 type BaseClient struct {
 	conn         *websocket.Conn
 	ctx          context.Context
 	cancel       context.CancelFunc
 	isRunning    bool
-	mu           *sync.Mutex
+	mu           sync.Mutex
 	endpoint     string
-	tokenGen     auth.BaseTokenGenerator
+	tokenGen     auth.WebSocketTokenGenerator
 	pingTicker   *time.Ticker
 	pingInterval time.Duration
 }
 
-// NewBaseClient은 새로운 BaseClient을 생성합니다
-func NewBaseClient(endpoint string, tokenGen auth.BaseTokenGenerator, pingInterval time.Duration) *BaseClient {
+func NewBaseClient(endpoint string, tokenGen auth.WebSocketTokenGenerator, pingInterval time.Duration) *BaseClient {
 	return &BaseClient{
 		endpoint:     endpoint,
 		tokenGen:     tokenGen,
 		pingInterval: pingInterval,
-		mu:           &sync.Mutex{},
 	}
 }
 
-// Connect implements types.WSConn
 func (c *BaseClient) Connect() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
+	if c.isRunning {
+		return nil
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	token, err := c.tokenGen.GenerateToken()
 	if err != nil {
 		cancel()
-		return fmt.Errorf("failed to generate token: %w", err)
+		return fmt.Errorf("토큰 생성 실패: %w", err)
 	}
 
-	opts := &websocket.DialOptions{
+	conn, _, err := websocket.Dial(ctx, c.endpoint, &websocket.DialOptions{
 		HTTPHeader: map[string][]string{
 			"Authorization": {token},
 		},
 		CompressionMode: websocket.CompressionContextTakeover,
-	}
-
-	conn, _, err := websocket.Dial(ctx, c.endpoint, opts)
+	})
 	if err != nil {
 		cancel()
-		return fmt.Errorf("websocket dial failed: %w", err)
+		return fmt.Errorf("웹소켓 연결 실패: %w", err)
 	}
 
 	c.conn = conn
@@ -65,57 +63,57 @@ func (c *BaseClient) Connect() error {
 	c.isRunning = true
 
 	c.startPingLoop()
-
 	return nil
 }
 
-// Ping implements types.WSConn
 func (c *BaseClient) Ping() error {
 	c.mu.Lock()
-	defer c.mu.Unlock()
+	conn := c.conn
+	ctx := c.ctx
+	c.mu.Unlock()
 
-	if c.conn == nil {
-		return fmt.Errorf("[Ping] 웹소켓 연결이 없습니다")
+	if conn == nil {
+		return fmt.Errorf("웹소켓 연결이 없습니다")
 	}
-	return c.conn.Ping(c.ctx)
+	return conn.Ping(ctx)
 }
 
-// Close implements types.WSConn
 func (c *BaseClient) Close() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	if !c.isRunning {
+		return nil
+	}
+
 	c.isRunning = false
 	if c.pingTicker != nil {
 		c.pingTicker.Stop()
+		c.pingTicker = nil
 	}
+
 	if c.conn != nil {
 		err := c.conn.Close(websocket.StatusNormalClosure, "정상 종료")
-		c.cancel()
+		if c.cancel != nil {
+			c.cancel()
+			c.cancel = nil
+		}
+		c.conn = nil
 		return err
 	}
 	return nil
 }
 
-// Reconnect는 웹소켓 연결을 재연결합니다
 func (c *BaseClient) Reconnect() error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	if err := c.Close(); err != nil {
-		return fmt.Errorf("close failed during reconnect: %w", err)
+		return fmt.Errorf("재연결 중 종료 실패: %w", err)
 	}
 	return c.Connect()
 }
 
-// startPingLoop는 주기적으로 핑을 보내는 고루틴을 시작합니다
 func (c *BaseClient) startPingLoop() {
 	if c.pingInterval == 0 {
 		return
-	}
-
-	if c.pingTicker != nil {
-		c.pingTicker.Stop()
 	}
 
 	c.pingTicker = time.NewTicker(c.pingInterval)
@@ -124,9 +122,6 @@ func (c *BaseClient) startPingLoop() {
 		for {
 			select {
 			case <-c.ctx.Done():
-				if c.pingTicker != nil {
-					c.pingTicker.Stop()
-				}
 				return
 			case <-c.pingTicker.C:
 				if err := c.Ping(); err != nil {

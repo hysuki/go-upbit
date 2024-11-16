@@ -1,12 +1,12 @@
 package rest
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/hysuki/go-upbit/rest/exchange"
 	"github.com/hysuki/go-upbit/rest/quotation"
@@ -22,6 +22,8 @@ type TokenGenerator interface {
 	GenerateToken() (string, error)
 	// GenerateTokenWithQuery는 쿼리 파라미터를 포함한 인증 토큰을 생성합니다.
 	GenerateTokenWithQuery(query url.Values) (string, error)
+	// GenerateTokenWithBody는 JSON body를 해시화하여 인증 토큰을 생성합니다.
+	GenerateTokenWithBody(body string) (string, error)
 }
 
 // Client는 REST API 클라이언트 인터페이스를 정의합니다.
@@ -74,6 +76,22 @@ func NewClient(tokenGen TokenGenerator) *client {
 	return c
 }
 
+// handleResponse는 API 응답을 처리하고 에러가 있다면 에러를 반환합니다
+func (c *client) handleResponse(resp *http.Response) ([]byte, error) {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// 응답이 에러인지 확인
+	var errResp ErrorResponse
+	if err := json.Unmarshal(body, &errResp); err == nil && errResp.Error.Message != "" {
+		return nil, &errResp.Error
+	}
+
+	return body, nil
+}
+
 func (c *client) Get(path string, params map[string]string) ([]byte, error) {
 	req, err := http.NewRequest("GET", c.baseURL+path, nil)
 	if err != nil {
@@ -101,43 +119,54 @@ func (c *client) Get(path string, params map[string]string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	// 응답 본문 읽기
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// 4XX 에러 응답 처리
-	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return nil, err
-		}
-		return nil, &errResp.Error
-	}
-
-	return body, nil
+	return c.handleResponse(resp)
 }
 
 func (c *client) Post(path string, body interface{}) ([]byte, error) {
-	bodyBytes, err := json.Marshal(body)
+	// body를 map[string]interface{}로 변환
+	var bodyMap map[string]interface{}
+
+	// 1. 이미 map[string]interface{}인 경우
+	if m, ok := body.(map[string]interface{}); ok {
+		bodyMap = m
+	} else {
+		// 2. 구조체를 JSON으로 마샬링 후 다시 map으로 언마샬링
+		jsonBytes, err := json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal body: %w", err)
+		}
+
+		if err := json.Unmarshal(jsonBytes, &bodyMap); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal body to map: %w", err)
+		}
+	}
+
+	// url.Values로 변환
+	values := make(url.Values)
+	for k, v := range bodyMap {
+		values.Add(k, fmt.Sprintf("%v", v))
+	}
+
+	// url.Values로 인코딩된 문자열 생성
+	encodedBody := values.Encode()
+
+	// 디버깅을 위한 출력
+	fmt.Printf("Encoded body: %s\n", encodedBody)
+
+	// 동일한 values로 토큰 생성
+	token, err := c.tokenGen.GenerateTokenWithQuery(values)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", c.baseURL+path, bytes.NewBuffer(bodyBytes))
+	// 요청 생성 (body는 인코딩된 form 데이터)
+	req, err := http.NewRequest("POST", c.baseURL+path, strings.NewReader(encodedBody))
 	if err != nil {
 		return nil, err
 	}
 
-	// Content-Type 헤더 설정
-	req.Header.Set("Content-Type", "application/json")
-
-	// 인증 토큰 생성 및 헤더 추가
-	token, err := c.tokenGen.GenerateToken()
-	if err != nil {
-		return nil, err
-	}
+	// 헤더 설정 (Content-Type을 form 데이터로 변경)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", token)
 
 	// HTTP 요청 실행
@@ -147,22 +176,7 @@ func (c *client) Post(path string, body interface{}) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	// 응답 본문 읽기
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	// 4XX 에러 응답 처리
-	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(respBody, &errResp); err != nil {
-			return nil, err
-		}
-		return nil, &errResp.Error
-	}
-
-	return respBody, nil
+	return c.handleResponse(resp)
 }
 
 func (c *client) Delete(path string, params map[string]string) ([]byte, error) {
@@ -192,22 +206,7 @@ func (c *client) Delete(path string, params map[string]string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	// 응답 본문 읽기
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	// 4XX 에러 응답 처리
-	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return nil, err
-		}
-		return nil, &errResp.Error
-	}
-
-	return body, nil
+	return c.handleResponse(resp)
 }
 
 func (c *client) GetExchange() *exchange.Exchange {

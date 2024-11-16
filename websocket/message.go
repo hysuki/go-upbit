@@ -51,9 +51,6 @@ func (c *BaseClient) Subscribe(ticket string, messageType string, codes []string
 
 // WriteJSON은 웹소켓 연결을 통해 JSON 데이터를 전송합니다
 func (c *BaseClient) WriteJSON(v interface{}) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	if c.conn == nil {
 		return fmt.Errorf("웹소켓 연결이 없습니다")
 	}
@@ -67,18 +64,13 @@ func (c *BaseClient) WriteJSON(v interface{}) error {
 }
 
 // ReadMessage는 웹소켓 연결로부터 메시지를 읽어옵니다
-// 서버 상태 메시지("UP")는 nil을 반환합니다
 func (c *BaseClient) ReadMessage() ([]byte, error) {
-	c.mu.Lock()
 	if c.conn == nil {
-		c.mu.Unlock()
 		// 연결이 없으면 재연결 시도
 		if err := c.Connect(); err != nil {
 			return nil, fmt.Errorf("재연결 실패: %v", err)
 		}
-		c.mu.Lock()
 	}
-	c.mu.Unlock()
 
 	_, data, err := c.conn.Read(c.ctx)
 	if err != nil {
