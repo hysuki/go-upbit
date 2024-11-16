@@ -3,11 +3,13 @@ package rest
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
-	"upbit.yougcha.bot/pkg/upbit/rest/exchange"
-	"upbit.yougcha.bot/pkg/upbit/rest/quotation"
+	"github.com/hysuki/go-upbit/rest/exchange"
+	"github.com/hysuki/go-upbit/rest/quotation"
 )
 
 const (
@@ -16,15 +18,23 @@ const (
 
 // TokenGenerator는 인증 토큰을 생성하는 인터페이스입니다.
 type TokenGenerator interface {
+	// GenerateToken은 기본 인증 토큰을 생성합니다.
 	GenerateToken() (string, error)
+	// GenerateTokenWithQuery는 쿼리 파라미터를 포함한 인증 토큰을 생성합니다.
+	GenerateTokenWithQuery(query url.Values) (string, error)
 }
 
 // Client는 REST API 클라이언트 인터페이스를 정의합니다.
 type Client interface {
+	// Get은 GET 요청을 수행합니다.
 	Get(path string, params map[string]string) ([]byte, error)
+	// Post는 POST 요청을 수행합니다.
 	Post(path string, body interface{}) ([]byte, error)
+	// Delete는 DELETE 요청을 수행합니다.
 	Delete(path string, params map[string]string) ([]byte, error)
+	// GetExchange는 거래소 API 클라이언트를 반환합니다.
 	GetExchange() *exchange.Exchange
+	// GetQuotation는 시세 API 클라이언트를 반환합니다.
 	GetQuotation() *quotation.Quotation
 }
 
@@ -77,8 +87,8 @@ func (c *client) Get(path string, params map[string]string) ([]byte, error) {
 	}
 	req.URL.RawQuery = q.Encode()
 
-	// 인증 토큰 생성 및 헤더 추가
-	token, err := c.tokenGen.GenerateToken()
+	// 인증 토큰 생성 시 쿼리 파라미터 전달
+	token, err := c.tokenGen.GenerateTokenWithQuery(req.URL.Query())
 	if err != nil {
 		return nil, err
 	}
@@ -87,14 +97,14 @@ func (c *client) Get(path string, params map[string]string) ([]byte, error) {
 	// HTTP 요청 실행
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to execute HTTP request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// 응답 본문 읽기
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	// 4XX 에러 응답 처리

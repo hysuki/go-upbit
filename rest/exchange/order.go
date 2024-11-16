@@ -200,7 +200,7 @@ func (e *Exchange) GetOrdersByID(params *OrderByIDParams) ([]Order, error) {
 	return orders, nil
 }
 
-// CreateOrder는 새로운 주문을 생성��니다
+// CreateOrder는 새로운 주문을 생성니다
 func (e *Exchange) CreateOrder(request CreateOrderRequest) (*Order, error) {
 	resp, err := e.Client.Post("/orders", request)
 	if err != nil {
@@ -402,7 +402,7 @@ type OrderConstraint struct {
 	// PriceUnit은 주문금액 단위입니다.
 	PriceUnit string `json:"price_unit"`
 	// MinTotal은 최소 매도/매수 금액입니다.
-	MinTotal float64 `json:"min_total"`
+	MinTotal string `json:"min_total"`
 }
 
 // OrderAccount는 매수/매도 계좌 정보를 나타내는 구조체입니다.
@@ -432,6 +432,7 @@ func (e *Exchange) GetOrderChance(market string) (*OrderChance, error) {
 		"market": market,
 	}
 
+	// GetAccounts()와 동일한 방식으로 호출
 	resp, err := e.Client.Get("/orders/chance", params)
 	if err != nil {
 		return nil, err

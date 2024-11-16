@@ -1,7 +1,7 @@
 package quotation
 
 import (
-	"upbit.yougcha.bot/pkg/upbit/rest/client"
+	"github.com/hysuki/go-upbit/rest/client"
 )
 
 // Quotation은 시세 API 기능을 제공합니다.
