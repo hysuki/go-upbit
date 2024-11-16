@@ -37,6 +37,9 @@ func ParseOrderBook(data []byte) (*OrderBook, error) {
 
 // SubscribeOrderBook는 지정된 마켓 코드들의 호가 정보를 구독합니다
 func (c *Client) SubscribeOrderBook(codes []string, options *common.SubscribeOptions) error {
+	if len(codes) == 0 {
+		return fmt.Errorf("마켓 코드는 필수입니다")
+	}
 	return c.Subscribe("", "orderbook", codes, options)
 }
 

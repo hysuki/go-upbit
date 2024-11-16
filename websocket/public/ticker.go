@@ -50,6 +50,9 @@ func ParseTicker(data []byte) (*Ticker, error) {
 
 // SubscribeTicker는 지정된 마켓 코드들의 현재가 정보를 구독합니다
 func (c *Client) SubscribeTicker(codes []string) error {
+	if len(codes) == 0 {
+		return fmt.Errorf("마켓 코드는 필수입니다")
+	}
 	return c.Subscribe("", "ticker", codes, nil)
 }
 

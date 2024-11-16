@@ -36,6 +36,9 @@ func ParseTrade(data []byte) (*Trade, error) {
 
 // SubscribeTrade는 지정된 마켓 코드들의 체결 정보를 구독합니다
 func (c *Client) SubscribeTrade(codes []string) error {
+	if len(codes) == 0 {
+		return fmt.Errorf("마켓 코드는 필수입니다")
+	}
 	return c.Subscribe("", "trade", codes, nil)
 }
 
