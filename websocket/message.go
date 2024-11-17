@@ -49,8 +49,11 @@ func (c *BaseClient) Subscribe(ticket string, messageType string, codes []string
 	return c.WriteJSON(messages)
 }
 
-// WriteJSON은 웹소켓 연결을 통해 JSON 데이터를 전송합니다
+// WriteJSON에 mutex 추가
 func (c *BaseClient) WriteJSON(v interface{}) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if c.conn == nil {
 		return fmt.Errorf("웹소켓 연결이 없습니다")
 	}
@@ -63,10 +66,12 @@ func (c *BaseClient) WriteJSON(v interface{}) error {
 	return c.conn.Write(c.ctx, websocket.MessageText, data)
 }
 
-// ReadMessage는 웹소켓 연결로부터 메시지를 읽어옵니다
+// ReadMessage도 mutex로 보호
 func (c *BaseClient) ReadMessage() ([]byte, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if c.conn == nil {
-		// 연결이 없으면 재연결 시도
 		if err := c.Connect(); err != nil {
 			return nil, fmt.Errorf("재연결 실패: %v", err)
 		}
@@ -74,7 +79,6 @@ func (c *BaseClient) ReadMessage() ([]byte, error) {
 
 	_, data, err := c.conn.Read(c.ctx)
 	if err != nil {
-		// 연결이 끊어진 경우 재연결 시도
 		if websocket.CloseStatus(err) != -1 {
 			if err := c.Reconnect(); err != nil {
 				return nil, fmt.Errorf("재연결 실패: %v", err)
@@ -92,7 +96,7 @@ func (c *BaseClient) ReadMessage() ([]byte, error) {
 	// 서버 상태 응답 확인
 	var status StatusResponse
 	if err := json.Unmarshal(data, &status); err == nil && status.Status == "UP" {
-		return nil, nil // 상태 메시지는 무시
+		return nil, nil
 	}
 
 	return data, nil
