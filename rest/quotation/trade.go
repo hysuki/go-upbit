@@ -6,32 +6,25 @@ import (
 	"fmt"
 )
 
-// Trade는 체결 내역 정보를 나타내는 구조체입니다.
+// Package quotation은 Upbit 거래소의 시세 조회 관련 API를 제공합니다.
+
+// Trade는 체결 내역 정보를 나타냅니다.
 type Trade struct {
-	// Market은 종목 코드입니다.
-	Market string `json:"market"`
-	// TradeDate는 체결 일자(UTC 기준)입니다.
-	TradeDate string `json:"trade_date_utc"`
-	// TradeTime은 체결 시각(UTC 기준)입니다.
-	TradeTime string `json:"trade_time_utc"`
-	// Timestamp는 체결 타임스탬프입니다.
-	Timestamp int64 `json:"timestamp"`
-	// TradePrice는 체결 가격입니다.
-	TradePrice float64 `json:"trade_price"`
-	// TradeVolume은 체결량입니다.
-	TradeVolume float64 `json:"trade_volume"`
-	// PrevClosingPrice는 전일 종가(UTC 0시 기준)입니다.
-	PrevClosingPrice float64 `json:"prev_closing_price"`
-	// ChangePrice는 변화량입니다.
-	ChangePrice float64 `json:"change_price"`
-	// AskBid는 매도/매수입니다.
-	AskBid string `json:"ask_bid"`
-	// SequentialID는 체결 번호(Unique)입니다.
-	SequentialID int64 `json:"sequential_id"`
+	Market           string  `json:"market"`             // 종목 코드
+	TradeDate        string  `json:"trade_date_utc"`     // 체결 일자(UTC 기준)
+	TradeTime        string  `json:"trade_time_utc"`     // 체결 시각(UTC 기준)
+	Timestamp        int64   `json:"timestamp"`          // 체결 타임스탬프
+	TradePrice       float64 `json:"trade_price"`        // 체결 가격
+	TradeVolume      float64 `json:"trade_volume"`       // 체결량
+	PrevClosingPrice float64 `json:"prev_closing_price"` // 전일 종가
+	ChangePrice      float64 `json:"change_price"`       // 변화량
+	AskBid           string  `json:"ask_bid"`            // 매도/매수
+	SequentialID     int64   `json:"sequential_id"`      // 체결 번호(Unique)
 }
 
 // GetTrades는 최근 체결 내역을 조회합니다.
-// 엔드포인트: https://api.upbit.com/v1/trades/ticks
+// market은 마켓 코드, to는 마지막 체결 시각, count는 체결 개수입니다.
+// cursor는 페이지네이션 커서, daysAgo는 최근 체결 날짜 기준 7일 이내의 이전 데이터 조회를 위한 파라미터입니다.
 func (q *Quotation) GetTrades(market string, to string, count int, cursor string, daysAgo int) ([]Trade, error) {
 	if market == "" {
 		return nil, errors.New("market is required")

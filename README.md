@@ -1,4 +1,3 @@
-
 # go-upbit
 
 **Go-Upbit**은 **업비트 API**를 쉽게 사용하기 위한 **Go 클라이언트 라이브러리**입니다.  
@@ -67,9 +66,17 @@ func main() {
 }
 ```
 
-### REST API
+### REST API 사용 예시
 ```go
-// 계좌 정보 조회
+// 마켓 코드 조회
+markets, err := client.RestAPI.GetQuotation().GetMarkets(false)
+if err != nil {
+	log.Printf("에러: %v", err)
+	return
+}
+log.Printf("마켓 목록: %+v", markets)
+
+// 계좌 조회
 accounts, err := client.RestAPI.GetExchange().GetAccounts()
 if err != nil {
 	log.Printf("에러: %v", err)
@@ -77,16 +84,8 @@ if err != nil {
 }
 log.Printf("계좌 정보: %+v", accounts)
 
-// 마켓 코드 조회
-markets, err := client.RestAPI.GetQuotation().GetMarkets(false)
-if err != nil {
-	log.Printf("에러: %v", err)
-	return
-}
-log.Printf("마켓 코드: %+v", markets)
-
-// 주문 생성
-order, err := client.RestAPI.GetExchange().CreateOrder(exchange.CreateOrderRequest{
+// 주문하기
+order, err := client.RestAPI.GetExchange().CreateOrder(&exchange.CreateOrderRequest{
 	Market:    "KRW-BTC",
 	Side:      exchange.OrderSideBid,
 	Volume:    "0.01",
@@ -97,60 +96,70 @@ if err != nil {
 	log.Printf("에러: %v", err)
 	return
 }
-log.Printf("주문 정보: %+v", order)
+log.Printf("주문 결과: %+v", order)
 ```
 
-### WebSocket API
+### WebSocket API 사용 예시
 ```go
-// 현재가 실시간 구독
-go func() {
-	err := client.PublicWS.SubscribeTicker([]string{"KRW-BTC"})
-	if err != nil {
-		log.Printf("구독 에러: %v", err)
-		return
+// 원화 마켓 코드 필터링
+var codes []string
+for _, market := range markets {
+	if strings.HasPrefix(market.Market, "KRW-") {
+		codes = append(codes, market.Market)
 	}
+}
 
+// WebSocket 구독 설정
+client.PublicWS.Subscribe(nil,
+	public.AddSubscribe(public.Orderbook, codes, nil),
+	public.AddSubscribe(public.Ticker, codes, nil),
+	public.AddSubscribe(public.Trade, codes, nil),
+)
+
+// 메시지 핸들러 시작
+client.PublicWS.StartMessageHandler()
+
+// 호가 정보 처리
+go func() {
+	for {
+		orderBook, err := client.PublicWS.GetOrderBook()
+		if err != nil {
+			log.Printf("호가 에러: %v", err)
+			continue
+		}
+		log.Printf("호가: %+v", orderBook)
+	}
+}()
+
+// 현재가 정보 처리
+go func() {
 	for {
 		ticker, err := client.PublicWS.GetTicker()
 		if err != nil {
-			log.Printf("에러: %v", err)
+			log.Printf("현재가 에러: %v", err)
 			continue
 		}
-		if ticker != nil {
-			log.Printf("현재가: %v", ticker.TradePrice)
-		}
+		log.Printf("현재가: %+v", ticker)
 	}
 }()
 
-// 내 자산 실시간 구독
+// 체결 정보 처리
 go func() {
-	err := client.PrivateWS.SubscribeMyAsset()
-	if err != nil {
-		log.Printf("구독 에러: %v", err)
-		return
-	}
-
 	for {
-		asset, err := client.PrivateWS.GetMyAsset()
+		trade, err := client.PublicWS.GetTrade()
 		if err != nil {
-			log.Printf("에러: %v", err)
+			log.Printf("체결 에러: %v", err)
 			continue
 		}
-		if asset != nil {
-			log.Printf("자산 정보: %+v", asset)
-		}
+		log.Printf("체결: %+v", trade)
 	}
 }()
 ```
 
----
-
 ## 참고 문서
 - [업비트 API 문서](https://docs.upbit.com/)
-- [REST API 레퍼런스](https://docs.upbit.com/reference/%EC%A0%84%EC%B2%B4-%EA%B3%84%EC%A2%8C-%EC%A1%B0%ED%9A%8C)
-- [WebSocket API 레퍼런스](https://docs.upbit.com/reference/general-info)
-
----
+- [REST API 레퍼런스](https://docs.upbit.com/reference)
+- [WebSocket API 레퍼런스](https://docs.upbit.com/reference/websocket-시세-유의사항)
 
 ## 라이선스
-**MIT License**
+MIT License

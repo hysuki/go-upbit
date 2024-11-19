@@ -7,144 +7,96 @@ import (
 	"time"
 )
 
-// DepositState는 입금 상태를 정의합니다.
+// Package exchange는 Upbit 거래소의 입출금 관련 API를 제공합니다.
 const (
-	// DepositStateProcessing은 입금 진행중 상태입니다.
-	DepositStateProcessing = "PROCESSING"
-	// DepositStateAccepted는 완료 상태입니다.
-	DepositStateAccepted = "ACCEPTED"
-	// DepositStateCancelled는 취소됨 상태입니다.
-	DepositStateCancelled = "CANCELLED"
-	// DepositStateRejected는 거절됨 상태입니다.
-	DepositStateRejected = "REJECTED"
-	// DepositStateTravelRuleSuspected는 트래블룰 추가 인증 대기중 상태입니다.
-	DepositStateTravelRuleSuspected = "TRAVEL_RULE_SUSPECTED"
-	// DepositStateRefunding는 반환절차 진행중 상태입니다.
-	DepositStateRefunding = "REFUNDING"
-	// DepositStateRefunded는 반환됨 상태입니다.
-	DepositStateRefunded = "REFUNDED"
+	DepositStateProcessing          = "PROCESSING"            // 입금 진행중
+	DepositStateAccepted            = "ACCEPTED"              // 입금 완료
+	DepositStateCancelled           = "CANCELLED"             // 입금 취소
+	DepositStateRejected            = "REJECTED"              // 입금 거절
+	DepositStateTravelRuleSuspected = "TRAVEL_RULE_SUSPECTED" // 트래블룰 추가 인증 필요
+	DepositStateRefunding           = "REFUNDING"             // 입금액 반환 진행중
+	DepositStateRefunded            = "REFUNDED"              // 입금액 반환 완료
 )
 
-// DepositTransactionType은 입금 유형을 정의합니다.
+// 입금 유형을 나타내는 상수들
 const (
-	// DepositTransactionTypeDefault는 일반입금입니다.
-	DepositTransactionTypeDefault = "default"
-	// DepositTransactionTypeInternal는 바로입금입니다.
-	DepositTransactionTypeInternal = "internal"
+	DepositTransactionTypeDefault  = "default"  // 일반 입금
+	DepositTransactionTypeInternal = "internal" // 바로 입금
 )
 
-// DepositInfo는 입금 정보를 나타내는 구조체입니다.
+// DepositInfo는 입금 정보를 나타냅니다.
 type DepositInfo struct {
-	// Type은 입출금 종류입니다.
-	Type string `json:"type"`
-	// UUID는 입금에 대한 고유 아이디입니다.
-	UUID string `json:"uuid"`
-	// Currency는 화폐를 의미하는 영문 대문자 코드입니다.
-	Currency string `json:"currency"`
-	// NetType은 입금 네트워크입니다.
-	NetType string `json:"net_type"`
-	// TxID는 입금의 트랜잭션 아이디입니다.
-	TxID string `json:"txid"`
-	// State는 입금 상태입니다.
-	State string `json:"state"`
-	// CreatedAt은 입금 생성 시간입니다.
-	CreatedAt time.Time `json:"created_at"`
-	// DoneAt은 입금 완료 시간입니다.
-	DoneAt time.Time `json:"done_at"`
-	// Amount는 입금 수량입니다.
-	Amount string `json:"amount"`
-	// Fee는 입금 수수료입니다.
-	Fee string `json:"fee"`
-	// TransactionType은 입금 유형입니다.
-	TransactionType string `json:"transaction_type"`
+	Type            string    `json:"type"`             // 입금 종류
+	UUID            string    `json:"uuid"`             // 입금 고유 식별자
+	Currency        string    `json:"currency"`         // 화폐를 의미하는 영문 대문자 코드
+	NetType         string    `json:"net_type"`         // 입금 네트워크 종류
+	TxID            string    `json:"txid"`             // 블록체인 트랜잭션 ID
+	State           string    `json:"state"`            // 입금 상태
+	CreatedAt       time.Time `json:"created_at"`       // 입금 요청 시각
+	DoneAt          time.Time `json:"done_at"`          // 입금 완료 시각
+	Amount          string    `json:"amount"`           // 입금 수량
+	Fee             string    `json:"fee"`              // 입금 수수료
+	TransactionType string    `json:"transaction_type"` // 입금 유형
 }
 
 // DepositAddress는 입금 주소 정보를 나타내는 구조체입니다.
 type DepositAddress struct {
-	// Currency는 화폐를 의미하는 영문 대문자 코드입니다.
-	Currency string `json:"currency"`
-	// NetType은 입금 네트워크입니다.
-	NetType string `json:"net_type"`
-	// DepositAddress는 입금 주소입니다.
-	DepositAddress string `json:"deposit_address"`
-	// SecondaryAddress는 2차 입금 주소입니다.
-	SecondaryAddress string `json:"secondary_address"`
+	Currency         string `json:"currency"`          // 화폐를 의미하는 영문 대문자 코드
+	NetType          string `json:"net_type"`          // 입금 네트워크 종류
+	DepositAddress   string `json:"deposit_address"`   // 입금 주소
+	SecondaryAddress string `json:"secondary_address"` // 2차 입금 주소 (일부 화폐에서 사용)
 }
 
-// GenerateCoinAddressParams는 입금 주소 생성을 위한 파라미터입니다.
+// GenerateCoinAddressParams는 입금 주소 생성 요청에 필요한 파라미터입니다.
 type GenerateCoinAddressParams struct {
-	// Currency는 Currency 코드입니다.
-	Currency string `json:"currency"`
-	// NetType은 입금 네트워크입니다.
-	NetType string `json:"net_type"`
+	Currency string `json:"currency"` // 화폐를 의미하는 영문 대문자 코드
+	NetType  string `json:"net_type"` // 입금 네트워크 종류
 }
 
 // GenerateCoinAddressResponse는 입금 주소 생성 요청에 대한 응답입니다.
 type GenerateCoinAddressResponse struct {
-	// Success는 요청 성공 여부입니다.
-	Success bool `json:"success"`
-	// Message는 요청 결과에 대한 메세지입니다.
-	Message string `json:"message"`
+	Success bool   `json:"success"` // 요청 성공 여부
+	Message string `json:"message"` // 요청 결과 메시지
 }
 
-// DepositCoinChance는 디지털 자산 입금 정보를 나타내는 구조체입니다.
+// DepositCoinChance는 암호화폐 입금 관련 정보를 나타내는 구조체입니다.
 type DepositCoinChance struct {
-	// Currency는 화폐를 의미하는 영문 대문자 코드입니다.
-	Currency string `json:"currency"`
-	// NetType은 입금 네트워크입니다.
-	NetType string `json:"net_type"`
-	// IsDepositPossible는 입금 가능여부입니다.
-	IsDepositPossible bool `json:"is_deposit_possible"`
-	// DepositImpossibleReason은 입금 불가사유입니다.
-	DepositImpossibleReason string `json:"deposit_impossible_reason"`
-	// MinimumDepositAmount는 최소 입금 수량입니다.
-	MinimumDepositAmount string `json:"minimum_deposit_amount"`
-	// MinimumDepositConfirmations는 최소 입금 컨펌 수입니다.
-	MinimumDepositConfirmations int `json:"minimum_deposit_confirmations"`
-	// DecimalPrecision는 입금 소수점 자릿수입니다.
-	DecimalPrecision int `json:"decimal_precision"`
+	Currency                    string `json:"currency"`                      // 화폐를 의미하는 영문 대문자 코드
+	NetType                     string `json:"net_type"`                      // 입금 네트워크 종류
+	IsDepositPossible           bool   `json:"is_deposit_possible"`           // 입금 가능 여부
+	DepositImpossibleReason     string `json:"deposit_impossible_reason"`     // 입금이 불가능한 경우 그 사유
+	MinimumDepositAmount        string `json:"minimum_deposit_amount"`        // 최소 입금 가능 수량
+	MinimumDepositConfirmations int    `json:"minimum_deposit_confirmations"` // 입금 확인에 필요한 최소 블록 확인 수
+	DecimalPrecision            int    `json:"decimal_precision"`             // 입금 수량의 소수점 자릿수
 }
 
-// DepositKRWParams는 원화 입금을 위한 파라미터입니다.
+// DepositKRWParams는 원화 입금 요청에 필요한 파라미터입니다.
 type DepositKRWParams struct {
-	// Amount는 입금액입니다.
-	Amount string `json:"amount"`
-	// TwoFactorType은 2차 인증 수단입니다.
-	// - kakao: 카카오 인증
-	// - naver: 네이버 인증
-	// - hana: 하나인증서 인증
-	TwoFactorType string `json:"two_factor_type"`
+	Amount        string `json:"amount"`          // 입금 금액
+	TwoFactorType string `json:"two_factor_type"` // 2차 인증 방식 (kakao, naver, hana)
 }
 
-// GetDepositParams는 개별 입금 조회를 위한 파라미터입니다.
+// GetDepositParams는 개별 입금 조회 시 필요한 파라미터입니다.
 type GetDepositParams struct {
-	// UUID는 입금 UUID입니다.
-	UUID string `json:"uuid,omitempty"`
-	// TxID는 입금 TXID입니다.
-	TxID string `json:"txid,omitempty"`
-	// Currency는 Currency 코드입니다.
-	Currency string `json:"currency,omitempty"`
+	UUID     string `json:"uuid,omitempty"`     // 입금 UUID
+	TxID     string `json:"txid,omitempty"`     // 입금 트랜잭션 ID
+	Currency string `json:"currency,omitempty"` // 화폐를 의미하는 영문 대문자 코드
 }
 
-// DepositListParams는 입금 리스트 조회를 위한 파라미터입니다.
+// DepositListParams는 입금 목록 조회 시 필요한 파라미터입니다.
 type DepositListParams struct {
-	// Currency는 Currency 코드입니다.
-	Currency string `json:"currency,omitempty"`
-	// State는 입금 상태입니다.
-	State string `json:"state,omitempty"`
-	// UUIDs는 입금 UUID의 목록입니다.
-	UUIDs []string `json:"uuids,omitempty"`
-	// TxIDs는 입금 TXID의 목록입니다.
-	TxIDs []string `json:"txids,omitempty"`
-	// Limit는 개수 제한입니다. (default: 100, max: 100)
-	Limit int `json:"limit,omitempty"`
-	// Page는 페이지 수입니다. (default: 1)
-	Page int `json:"page,omitempty"`
-	// OrderBy는 정렬 방식입니다.
-	OrderBy string `json:"order_by,omitempty"`
+	Currency string   `json:"currency,omitempty"` // 화폐를 의미하는 영문 대문자 코드
+	State    string   `json:"state,omitempty"`    // 입금 상태
+	UUIDs    []string `json:"uuids,omitempty"`    // 조회하고자 하는 입금 UUID 목록
+	TxIDs    []string `json:"txids,omitempty"`    // 조회하고자 하는 트랜잭션 ID 목록
+	Limit    int      `json:"limit,omitempty"`    // 반환되는 항목의 최대 개수 (최대 100)
+	Page     int      `json:"page,omitempty"`     // 조회할 페이지
+	OrderBy  string   `json:"order_by,omitempty"` // 정렬 기준
 }
 
-// GenerateCoinAddress는 입금 주소 생성을 요청합니다.
+// GenerateCoinAddress는 입금 주소를 생성합니다.
+// 생성된 주소 정보와 함께 성공 여부를 반환합니다.
+// 파라미터로 화폐 코드와 네트워크 유형이 필요합니다.
 func (e *Exchange) GenerateCoinAddress(params *GenerateCoinAddressParams) (*GenerateCoinAddressResponse, error) {
 	if params == nil {
 		return nil, errors.New("params cannot be nil")
@@ -170,7 +122,8 @@ func (e *Exchange) GenerateCoinAddress(params *GenerateCoinAddressParams) (*Gene
 	return &response, nil
 }
 
-// GetCoinAddresses는 전체 입금 주소를 조회합니다.
+// GetCoinAddresses는 사용자의 전체 입금 주소 목록을 조회합니다.
+// 등록된 모든 화폐의 입금 주소 정보를 반환합니다.
 func (e *Exchange) GetCoinAddresses() ([]DepositAddress, error) {
 	resp, err := e.Client.Get("/deposits/coin_addresses", nil)
 	if err != nil {
@@ -185,7 +138,9 @@ func (e *Exchange) GetCoinAddresses() ([]DepositAddress, error) {
 	return addresses, nil
 }
 
-// GetCoinAddress는 개별 입금 주소를 조회합니다.
+// GetCoinAddress는 특정 화폐의 입금 주소를 조회합니다.
+// currency는 화폐 코드, netType은 네트워크 유형을 지정합니다.
+// 해당 화폐의 입금 주소가 없는 경우 오류를 반환합니다.
 func (e *Exchange) GetCoinAddress(currency string, netType string) (*DepositAddress, error) {
 	if currency == "" {
 		return nil, errors.New("currency is required")
@@ -211,7 +166,8 @@ func (e *Exchange) GetCoinAddress(currency string, netType string) (*DepositAddr
 	return &address, nil
 }
 
-// GetDepositCoinChance는 디지털 자산 입금 정보를 조회합니다.
+// GetDepositCoinChance는 암호화폐 입금 관련 정보를 조회합니다.
+// currency로 지정한 화폐의 입금 가능 여부와 최소 입금액 등의 정보를 반환합니다.
 func (e *Exchange) GetDepositCoinChance(currency string) (*DepositCoinChance, error) {
 	if currency == "" {
 		return nil, errors.New("currency is required")
@@ -235,6 +191,7 @@ func (e *Exchange) GetDepositCoinChance(currency string) (*DepositCoinChance, er
 }
 
 // DepositKRW는 원화 입금을 요청합니다.
+// 입금액과 2차 인증 방식을 지정해야 하며, 입금 성공 시 입금 정보를 반환합니다.
 func (e *Exchange) DepositKRW(params *DepositKRWParams) (*DepositInfo, error) {
 	if params == nil {
 		return nil, errors.New("params cannot be nil")
@@ -260,7 +217,8 @@ func (e *Exchange) DepositKRW(params *DepositKRWParams) (*DepositInfo, error) {
 	return &deposit, nil
 }
 
-// GetDeposit는 개별 입금을 조회합니다.
+// GetDeposit는 특정 입금 내역을 조회합니다.
+// UUID, TxID, Currency 중 최소 하나의 식별자가 필요합니다.
 func (e *Exchange) GetDeposit(params *GetDepositParams) (*DepositInfo, error) {
 	if params == nil {
 		return nil, errors.New("params cannot be nil")
@@ -295,7 +253,8 @@ func (e *Exchange) GetDeposit(params *GetDepositParams) (*DepositInfo, error) {
 	return &deposit, nil
 }
 
-// GetDeposits는 입금 리스트를 조회합니다.
+// GetDeposits는 입금 목록을 조회합니다.
+// 조회 조건을 params로 지정할 수 있으며, 미지정 시 기본값이 적용됩니다.
 func (e *Exchange) GetDeposits(params *DepositListParams) ([]DepositInfo, error) {
 	queryParams := make(map[string]string)
 

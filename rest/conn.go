@@ -12,59 +12,54 @@ import (
 	"github.com/hysuki/go-upbit/rest/quotation"
 )
 
+// Package rest는 Upbit REST API와의 통신을 담당합니다.
 const (
-	BaseURL = "https://api.upbit.com/v1" // REST API 엔드포인트
+	BaseURL = "https://api.upbit.com/v1" // REST API 기본 URL
 )
 
-// TokenGenerator는 인증 토큰을 생성하는 인터페이스입니다.
+// TokenGenerator는 Upbit API 인증에 필요한 토큰을 생성하는 인터페이스입니다.
 type TokenGenerator interface {
-	// GenerateToken은 기본 인증 토큰을 생성합니다.
-	GenerateToken() (string, error)
-	// GenerateTokenWithQuery는 쿼리 파라미터를 포함한 인증 토큰을 생성합니다.
-	GenerateTokenWithQuery(query url.Values) (string, error)
-	// GenerateTokenWithBody는 JSON body를 해시화하여 인증 토큰을 생성합니다.
-	GenerateTokenWithBody(body string) (string, error)
+	GenerateToken() (string, error)                          // 기본 JWT 토큰 생성
+	GenerateTokenWithQuery(query url.Values) (string, error) // 쿼리 파라미터를 포함한 JWT 토큰 생성
+	GenerateTokenWithBody(body string) (string, error)       // JSON 본문을 포함한 JWT 토큰 생성
 }
 
-// Client는 REST API 클라이언트 인터페이스를 정의합니다.
+// Client는 Upbit REST API와 상호작용하기 위한 메서드를 정의하는 인터페이스입니다.
 type Client interface {
-	// Get은 GET 요청을 수행합니다.
-	Get(path string, params map[string]string) ([]byte, error)
-	// Post는 POST 요청을 수행합니다.
-	Post(path string, body interface{}) ([]byte, error)
-	// Delete는 DELETE 요청을 수행합니다.
-	Delete(path string, params map[string]string) ([]byte, error)
-	// GetExchange는 거래소 API 클라이언트를 반환합니다.
-	GetExchange() *exchange.Exchange
-	// GetQuotation는 시세 API 클라이언트를 반환합니다.
-	GetQuotation() *quotation.Quotation
+	Get(path string, params map[string]string) ([]byte, error)    // GET 요청 수행
+	Post(path string, body interface{}) ([]byte, error)           // POST 요청 수행
+	Delete(path string, params map[string]string) ([]byte, error) // DELETE 요청 수행
+	GetExchange() *exchange.Exchange                              // 거래소 API 객체 반환
+	GetQuotation() *quotation.Quotation                           // 시세 조회 API 객체 반환
 }
 
-// APIError는 Upbit API 에러 응답을 나타냅니다.
+// APIError는 Upbit API에서 반환하는 에러 정보를 나타냅니다.
 type APIError struct {
-	Name    string `json:"name"`
-	Message string `json:"message"`
+	Name    string `json:"name"`    // 에러 이름
+	Message string `json:"message"` // 에러 메시지
 }
 
+// Error는 에러 메시지를 반환합니다.
 func (e *APIError) Error() string {
 	return e.Message
 }
 
-// ErrorResponse는 API 에러 응답의 전체 구조를 나타냅니다.
+// ErrorResponse는 API 에러 응답을 나타냅니다.
 type ErrorResponse struct {
-	Error APIError `json:"error"`
+	Error APIError `json:"error"` // API 에러 정보
 }
 
-// client는 REST API 호출을 관리합니다.
+// client는 Upbit REST API 클라이언트입니다.
 type client struct {
-	httpClient *http.Client
-	tokenGen   TokenGenerator
-	baseURL    string
-	Exchange   *exchange.Exchange
-	Quotation  *quotation.Quotation
+	httpClient *http.Client         // HTTP 클라이언트
+	tokenGen   TokenGenerator       // 토큰 생성기
+	baseURL    string               // API 기본 URL
+	Exchange   *exchange.Exchange   // 거래소 API 객체
+	Quotation  *quotation.Quotation // 시세 조회 API 객체
 }
 
-// NewClient는 새로운 REST API 클라이언트를 생성합니다.
+// NewClient는 새로운 Upbit REST API 클라이언트를 생성합니다.
+// tokenGen은 API 인증에 사용할 토큰 생성기입니다.
 func NewClient(tokenGen TokenGenerator) *client {
 	c := &client{
 		httpClient: &http.Client{},
@@ -76,7 +71,7 @@ func NewClient(tokenGen TokenGenerator) *client {
 	return c
 }
 
-// handleResponse는 API 응답을 처리하고 에러가 있다면 에러를 반환합니다
+// handleResponse는 API 응답을 처리하고 에러가 있는 경우 이를 반환합니다.
 func (c *client) handleResponse(resp *http.Response) ([]byte, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -92,6 +87,7 @@ func (c *client) handleResponse(resp *http.Response) ([]byte, error) {
 	return body, nil
 }
 
+// Get은 지정된 경로로 GET 요청을 보내고 응답을 반환합니다.
 func (c *client) Get(path string, params map[string]string) ([]byte, error) {
 	req, err := http.NewRequest("GET", c.baseURL+path, nil)
 	if err != nil {
@@ -122,6 +118,7 @@ func (c *client) Get(path string, params map[string]string) ([]byte, error) {
 	return c.handleResponse(resp)
 }
 
+// Post는 지정된 경로로 POST 요청을 보내고 응답을 반환합니다.
 func (c *client) Post(path string, body interface{}) ([]byte, error) {
 	// body를 map[string]interface{}로 변환
 	var bodyMap map[string]interface{}
@@ -176,6 +173,7 @@ func (c *client) Post(path string, body interface{}) ([]byte, error) {
 	return c.handleResponse(resp)
 }
 
+// Delete는 지정된 경로로 DELETE 요청을 보내고 응답을 반환합니다.
 func (c *client) Delete(path string, params map[string]string) ([]byte, error) {
 	req, err := http.NewRequest("DELETE", c.baseURL+path, nil)
 	if err != nil {
@@ -206,10 +204,12 @@ func (c *client) Delete(path string, params map[string]string) ([]byte, error) {
 	return c.handleResponse(resp)
 }
 
+// GetExchange는 거래소 API 관련 기능을 제공하는 Exchange 객체를 반환합니다.
 func (c *client) GetExchange() *exchange.Exchange {
 	return c.Exchange
 }
 
+// GetQuotation은 시세 조회 관련 기능을 제공하는 Quotation 객체를 반환합니다.
 func (c *client) GetQuotation() *quotation.Quotation {
 	return c.Quotation
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/hysuki/go-upbit/websocket/common"
 )
 
-// TradeResponse는 체결 정보를 담는 구조체입니다
+// TradeResponse는 체결 정보를 나타냅니다.
 type TradeResponse struct {
 	Type             string            `json:"type"`               // 타입
 	Code             string            `json:"code"`               // 마켓 코드
@@ -25,7 +25,8 @@ type TradeResponse struct {
 	StreamType       common.StreamType `json:"stream_type"`        // 스트림 타입
 }
 
-// ParseTrade는 JSON 데이터를 Trade 구조체로 파싱합니다
+// ParseTrade는 JSON 데이터를 TradeResponse 구조체로 파싱합니다.
+// 파싱에 실패하면 에러를 반환합니다.
 func ParseTrade(data []byte) (*TradeResponse, error) {
 	var trade TradeResponse
 	if err := json.Unmarshal(data, &trade); err != nil {
@@ -34,31 +35,8 @@ func ParseTrade(data []byte) (*TradeResponse, error) {
 	return &trade, nil
 }
 
-// SubscribeTrade는 지정된 마켓 코드들의 체결 정보를 구독합니다
-// func (c *Client) SubscribeTrade(codes []string) error {
-// 	if len(codes) == 0 {
-// 		return fmt.Errorf("마켓 코드는 필수입니다")
-// 	}
-// 	return c.Subscribe("", "trade", codes, nil)
-// }
-
-// GetTrade는 수신된 메시지를 TradeResponse 구조체로 변환합니다
-// func (c *Client) GetTrade(data []byte) (*TradeResponse, error) {
-
-// 	// 타입 확인
-// 	readMessage := websocket.ReadMessage{}
-// 	if err := json.Unmarshal(data, &readMessage); err != nil {
-// 		return nil, fmt.Errorf("타입 확인 실패: %v", err)
-// 	}
-
-// 	if readMessage.Type != string(Trade) {
-// 		return nil, nil
-// 	}
-
-// 	return ParseTrade(data)
-// }
-
-// GetTrade waits for the next trade message
+// GetTrade는 다음 체결 메시지를 기다립니다.
+// 에러가 발생하면 에러를 반환하고, 성공하면 체결 정보를 반환합니다.
 func (c *Client) GetTrade() (*TradeResponse, error) {
 	select {
 	case err := <-c.errChan:

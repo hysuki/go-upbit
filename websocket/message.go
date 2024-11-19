@@ -1,3 +1,4 @@
+// Package websocket은 Upbit 거래소의 웹소켓 연결을 관리합니다.
 package websocket
 
 import (
@@ -10,23 +11,26 @@ import (
 	"github.com/hysuki/go-upbit/websocket/common"
 )
 
-// Message는 웹소켓 메시지 구조체입니다
+// Message는 웹소켓 메시지를 나타냅니다.
 type Message struct {
 	Ticket         string   `json:"ticket,omitempty"`           // 식별용 티켓
 	Type           string   `json:"type,omitempty"`             // 메시지 타입
 	Codes          []string `json:"codes,omitempty"`            // 구독할 마켓 코드 목록
-	Level          *float64 `json:"level,omitempty"`            // 모아보기 단위
+	Level          *float64 `json:"level,omitempty"`            // 호가 모아보기 단위
 	IsOnlySnapshot *bool    `json:"is_only_snapshot,omitempty"` // 스냅샷 시세만 제공
 	IsOnlyRealtime *bool    `json:"is_only_realtime,omitempty"` // 실시간 시세만 제공
 }
 
-// StatusResponse는 서버 상태 응답을 위한 구조체입니다
+// StatusResponse는 서버 상태 응답을 나타냅니다.
 type StatusResponse struct {
-	Status string `json:"status"`
+	Status string `json:"status"` // 서버 상태
 }
 
+// SubscribeFunc는 구독 함수 타입을 정의합니다.
 type SubscribeFunc func(*BaseClient) error
 
+// AddSubscribe는 구독 함수를 생성합니다.
+// messageType은 메시지 유형, codes는 마켓 코드 목록, options는 구독 옵션입니다.
 func AddSubscribe(messageType string, codes []string, options *common.SubscribeOptions) SubscribeFunc {
 	return func(c *BaseClient) error {
 		var message Message
@@ -62,6 +66,8 @@ func AddSubscribe(messageType string, codes []string, options *common.SubscribeO
 	}
 }
 
+// Subscribe는 지정된 구독 함수들을 사용하여 구독을 시작합니다.
+// ticket은 구독 식별자, f는 구독 함수 목록입니다.
 func (c *BaseClient) Subscribe(ticket *string, f ...SubscribeFunc) error {
 	for _, fn := range f {
 		if err := fn(c); err != nil {
@@ -71,6 +77,8 @@ func (c *BaseClient) Subscribe(ticket *string, f ...SubscribeFunc) error {
 	return c.request(ticket)
 }
 
+// request는 구독 요청을 전송합니다.
+// ticket은 구독 식별자입니다.
 func (c *BaseClient) request(ticket *string) error {
 	if ticket == nil {
 		uuid := uuid.New().String()
@@ -88,7 +96,8 @@ func (c *BaseClient) request(ticket *string) error {
 	return c.WriteJSON(messages)
 }
 
-// WriteJSON에 mutex 추가
+// WriteJSON은 JSON 데이터를 웹소켓으로 전송합니다.
+// 전송에 실패하면 에러를 반환합니다.
 func (c *BaseClient) WriteJSON(v interface{}) error {
 	c.Mu.Lock()
 	defer c.Mu.Unlock()
@@ -105,11 +114,15 @@ func (c *BaseClient) WriteJSON(v interface{}) error {
 	return c.Conn.Write(c.Ctx, websocket.MessageText, data)
 }
 
+// ReadMessage는 웹소켓 메시지를 읽어옵니다.
+// 메시지 읽기에 실패하면 에러를 반환합니다.
 type ReadMessage struct {
-	Type string `json:"type"`
-	Code string `json:"code"`
+	Type string `json:"type"` // 메시지 타입
+	Code string `json:"code"` // 마켓 코드
 }
 
+// ReadMessage는 웹소켓으로부터 메시지를 읽어옵니다.
+// 연결이 끊어진 경우 재연결을 시도합니다.
 func (c *BaseClient) ReadMessage() ([]byte, error) {
 	if c.Conn == nil {
 		if err := c.Connect(); err != nil {

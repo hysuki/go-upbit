@@ -7,98 +7,89 @@ import (
 	"time"
 )
 
-// OrderType은 주문 유형을 나타냅니다
+// Package exchange는 Upbit 거래소의 주문 관련 API를 제공합니다.
+
+// OrderType은 주문 유형을 나타냅니다.
 type OrderType string
 
+// 주문 유형을 정의하는 상수들입니다.
 const (
-	// OrderTypeLimit는 지정가 주문입니다
-	OrderTypeLimit OrderType = "limit"
-	// OrderTypePrice는 시장가 매수 주문입니다
-	OrderTypePrice OrderType = "price"
-	// OrderTypeMarket는 시장가 매도 주문입니다
-	OrderTypeMarket OrderType = "market"
-	// OrderTypeBest는 최유리 지정가 주문입니다
-	OrderTypeBest OrderType = "best"
+	OrderTypeLimit  OrderType = "limit"  // 지정가 주문
+	OrderTypePrice  OrderType = "price"  // 시장가 매수 주문
+	OrderTypeMarket OrderType = "market" // 시장가 매도 주문
+	OrderTypeBest   OrderType = "best"   // 최유리 지정가 주문
 )
 
-// OrderSide는 주문 종류(매수/매도)를 나타냅니다
+// OrderSide는 주문 종류를 나타냅니다.
 type OrderSide string
 
+// 주문 종류를 정의하는 상수들입니다.
 const (
-	// OrderSideBid는 매수 주문입니다
-	OrderSideBid OrderSide = "bid"
-	// OrderSideAsk는 매도 주문입니다
-	OrderSideAsk OrderSide = "ask"
+	OrderSideBid OrderSide = "bid" // 매수 주문
+	OrderSideAsk OrderSide = "ask" // 매도 주문
 )
 
-// TimeInForce는 주문의 체결 조건을 나타냅니다
+// TimeInForce는 주문의 체결 조건을 나타냅니다.
 type TimeInForce string
 
+// 주문 체결 조건을 정의하는 상수들입니다.
 const (
-	// TimeInForceIOC는 "Immediate or Cancel" 조건입니다
-	TimeInForceIOC TimeInForce = "ioc"
-	// TimeInForceFOK는 "Fill or Kill" 조건입니다
-	TimeInForceFOK TimeInForce = "fok"
+	TimeInForceIOC TimeInForce = "ioc" // Immediate or Cancel 조건
+	TimeInForceFOK TimeInForce = "fok" // Fill or Kill 조건
 )
 
-// OrderState 상수들은 주문의 상태를 정의합니다.
+// 주문 상태를 정의하는 상수들입니다.
 const (
-	// OrderStateWait는 체결 대기 상태입니다.
-	OrderStateWait = "wait"
-	// OrderStateWatch는 예약주문 대기 상태입니다.
-	OrderStateWatch = "watch"
-	// OrderStateDone은 전체 체결 완료 상태입니다.
-	OrderStateDone = "done"
-	// OrderStateCancel은 주문 취소 상태입니다.
-	OrderStateCancel = "cancel"
+	OrderStateWait   = "wait"   // 체결 대기
+	OrderStateWatch  = "watch"  // 예약주문 대기
+	OrderStateDone   = "done"   // 전체 체결 완료
+	OrderStateCancel = "cancel" // 주문 취소
 )
 
-// OrderBy 상수들은 정렬 방식을 정의합니다.
+// 정렬 방식을 정의하는 상수들입니다.
 const (
-	// OrderByAsc는 오름차순 정렬입니다.
-	OrderByAsc = "asc"
-	// OrderByDesc는 내림차순 정렬입니다.
-	OrderByDesc = "desc"
+	OrderByAsc  = "asc"  // 오름차순 정렬
+	OrderByDesc = "desc" // 내림차순 정렬
 )
 
-// CreateOrderRequest는 주문 생성 요청 파라미터를 정의합니다
+// CreateOrderRequest는 주문 생성에 필요한 파라미터입니다.
 type CreateOrderRequest struct {
-	Market      string      `json:"market,omitempty"`        // 마켓 ID (필수)
-	Side        OrderSide   `json:"side,omitempty"`          // 주문 종류 (필수)
-	Volume      string      `json:"volume,omitempty"`        // 주문량 (지정가, 시장가 매도 시 필수)
-	Price       string      `json:"price,omitempty"`         // 주문 가격 (지정가, 시장가 매수 시 필수)
-	OrderType   OrderType   `json:"ord_type,omitempty"`      // 주문 타입 (필수)
-	Identifier  string      `json:"identifier,omitempty"`    // 조회용 사용자 지정값 (선택)
-	TimeInForce TimeInForce `json:"time_in_force,omitempty"` // IOC, FOK 주문 설정
+	Market      string      `json:"market,omitempty"`        // 마켓 ID
+	Side        OrderSide   `json:"side,omitempty"`          // 주문 종류
+	Volume      string      `json:"volume,omitempty"`        // 주문량
+	Price       string      `json:"price,omitempty"`         // 주문 가격
+	OrderType   OrderType   `json:"ord_type,omitempty"`      // 주문 타입
+	Identifier  string      `json:"identifier,omitempty"`    // 조회용 사용자 지정값
+	TimeInForce TimeInForce `json:"time_in_force,omitempty"` // 체결 조건
 }
 
-// Order는 주문 정보를 나타냅니다
+// Order는 주문 정보를 나타냅니다.
 type Order struct {
-	UUID            string    `json:"uuid,omitempty"`             // 주문의 고유 아이디
+	UUID            string    `json:"uuid,omitempty"`             // 주문의 고유 ID
 	Side            OrderSide `json:"side,omitempty"`             // 주문 종류
 	OrderType       OrderType `json:"ord_type,omitempty"`         // 주문 방식
-	Price           string    `json:"price,omitempty"`            // 주문 당시 화폐 가격
+	Price           string    `json:"price,omitempty"`            // 주문 가격
 	State           string    `json:"state,omitempty"`            // 주문 상태
-	Market          string    `json:"market,omitempty"`           // 마켓의 유일키
-	CreatedAt       string    `json:"created_at,omitempty"`       // 주문 생성 시간
-	Volume          string    `json:"volume,omitempty"`           // 사용자가 입력한 주문 양
-	RemainingVolume string    `json:"remaining_volume,omitempty"` // 체결 후 남은 주문 양
-	ReservedFee     string    `json:"reserved_fee,omitempty"`     // 수수료로 예약된 비용
-	RemainingFee    string    `json:"remaining_fee,omitempty"`    // 남은 수수료
+	Market          string    `json:"market,omitempty"`           // 마켓 ID
+	CreatedAt       string    `json:"created_at,omitempty"`       // 주문 생성 시각
+	Volume          string    `json:"volume,omitempty"`           // 주문량
+	RemainingVolume string    `json:"remaining_volume,omitempty"` // 잔여 주문량
+	ReservedFee     string    `json:"reserved_fee,omitempty"`     // 예약된 수수료
+	RemainingFee    string    `json:"remaining_fee,omitempty"`    // 잔여 수수료
 	PaidFee         string    `json:"paid_fee,omitempty"`         // 사용된 수수료
-	Locked          string    `json:"locked,omitempty"`           // 거래에 사용중인 비용
+	Locked          string    `json:"locked,omitempty"`           // 거래에 사용된 비용
 	ExecutedVolume  string    `json:"executed_volume,omitempty"`  // 체결된 양
-	TradesCount     int       `json:"trades_count,omitempty"`     // 해당 주문에 걸린 체결 수
-	TimeInForce     string    `json:"time_in_force,omitempty"`    // IOC, FOK 설정
+	TradesCount     int       `json:"trades_count,omitempty"`     // 체결 수
+	TimeInForce     string    `json:"time_in_force,omitempty"`    // 체결 조건
 }
 
-// CancelOrderParams는 주문 취소를 위한 파라미터입니다.
+// CancelOrderParams는 주문 취소에 필요한 파라미터입니다.
 type CancelOrderParams struct {
 	UUID       string `json:"uuid,omitempty"`       // 취소할 주문의 UUID
 	Identifier string `json:"identifier,omitempty"` // 조회용 사용자 지정값
 }
 
-// ClosedOrderParams는 종료된 주문 조회를 위한 파라미터입니다.
+// ClosedOrderParams는 완료된 주문 조회에 필요한 파라미터입니다.
 type ClosedOrderParams struct {
 	Market    string     `json:"market,omitempty"`     // 마켓 ID
 	State     string     `json:"state,omitempty"`      // 주문 상태
@@ -109,7 +100,7 @@ type ClosedOrderParams struct {
 	OrderBy   string     `json:"order_by,omitempty"`   // 정렬 방식
 }
 
-// OpenOrderParams는 미체결 주문 조회를 위한 파라미터입니다.
+// OpenOrderParams는 미체결 주문 조회에 필요한 파라미터입니다.
 type OpenOrderParams struct {
 	Market  string   `json:"market,omitempty"`   // 마켓 ID
 	State   string   `json:"state,omitempty"`    // 주문 상태
@@ -121,26 +112,59 @@ type OpenOrderParams struct {
 
 // 에러 정의
 var (
-	// ErrInvalidParams는 잘못된 파라미터가 전달되었을 때 발생하는 에러입니다.
-	ErrInvalidParams = errors.New("invalid parameters")
-	// ErrTooManyIDs는 UUID 또는 identifier가 100개를 초과할 때 발생하는 에러입니다.
-	ErrTooManyIDs = errors.New("too many uuids or identifiers: maximum is 100")
+	ErrInvalidParams = errors.New("invalid parameters")                            // 잘못된 파라미터 에러
+	ErrTooManyIDs    = errors.New("too many uuids or identifiers: maximum is 100") // ID 초과 에러
 )
 
-// OrderByIDParams는 UUID 또는 identifier로 주문 리스트를 조회하기 위한 파라미터입니다.
+// OrderByIDParams는 주문 조회에 필요한 파라미터입니다.
 type OrderByIDParams struct {
-	// Market은 마켓 ID입니다.
-	Market string `json:"market,omitempty"`
-	// UUIDs는 주문 UUID의 목록입니다. (최대 100개)
-	UUIDs []string `json:"uuids,omitempty"`
-	// Identifiers는 주문 identifier의 목록입니다. (최대 100개)
-	Identifiers []string `json:"identifiers,omitempty"`
-	// OrderBy는 정렬 방식입니다. (asc, desc)
-	OrderBy string `json:"order_by,omitempty"`
+	Market      string   `json:"market,omitempty"`      // 마켓 ID
+	UUIDs       []string `json:"uuids,omitempty"`       // 주문 UUID 목록
+	Identifiers []string `json:"identifiers,omitempty"` // 주문 식별자 목록
+	OrderBy     string   `json:"order_by,omitempty"`    // 정렬 방식
 }
 
-// GetOrdersByID는 UUID 또는 identifier로 주문 리스트를 조회합니다.
-// 엔드포인트: https://api.upbit.com/v1/orders/uuids
+// OrderChance는 마켓별 주문 가능 정보를 나타냅니다.
+type OrderChance struct {
+	BidFee     string       `json:"bid_fee"`     // 매수 수수료 비율
+	AskFee     string       `json:"ask_fee"`     // 매도 수수료 비율
+	Market     OrderMarket  `json:"market"`      // 마켓 정보
+	BidAccount OrderAccount `json:"bid_account"` // 매수 계좌 정보
+	AskAccount OrderAccount `json:"ask_account"` // 매도 계좌 정보
+}
+
+// OrderMarket은 마켓 정보를 나타냅니다.
+type OrderMarket struct {
+	ID         string          `json:"id"`          // 마켓 ID
+	Name       string          `json:"name"`        // 마켓 이름
+	OrderTypes []string        `json:"order_types"` // 지원 주문 방식
+	AskTypes   []string        `json:"ask_types"`   // 매도 주문 지원 방식
+	BidTypes   []string        `json:"bid_types"`   // 매수 주문 지원 방식
+	OrderSides []string        `json:"order_sides"` // 지원 주문 종류
+	Bid        OrderConstraint `json:"bid"`         // 매수 제약사항
+	Ask        OrderConstraint `json:"ask"`         // 매도 제약사항
+	MaxTotal   string          `json:"max_total"`   // 최대 매도/매수 금액
+	State      string          `json:"state"`       // 마켓 운영 상태
+}
+
+// OrderConstraint는 마켓 거래 제약사항을 나타냅니다.
+type OrderConstraint struct {
+	Currency  string `json:"currency"`   // 화폐를 의미하는 영문 대문자 코드
+	PriceUnit string `json:"price_unit"` // 주문금액 단위
+	MinTotal  string `json:"min_total"`  // 최소 매도/매수 금액
+}
+
+// OrderAccount는 매수/매도 계좌 정보를 나타냅니다.
+type OrderAccount struct {
+	Currency            string `json:"currency"`               // 화폐를 의미하는 영문 대문자 코드
+	Balance             string `json:"balance"`                // 주문가능 금액/수량
+	Locked              string `json:"locked"`                 // 주문 중 묶여있는 금액/수량
+	AvgBuyPrice         string `json:"avg_buy_price"`          // 매수평균가
+	AvgBuyPriceModified bool   `json:"avg_buy_price_modified"` // 매수평균가 수정 여부
+	UnitCurrency        string `json:"unit_currency"`          // 평단가 기준 화폐
+}
+
+// GetOrdersByID는 UUID 또는 식별자로 주문 목록을 조회합니다.
 func (e *Exchange) GetOrdersByID(params *OrderByIDParams) ([]Order, error) {
 	if params == nil {
 		return nil, ErrInvalidParams
@@ -200,7 +224,7 @@ func (e *Exchange) GetOrdersByID(params *OrderByIDParams) ([]Order, error) {
 	return orders, nil
 }
 
-// CreateOrder는 새로운 주문을 생성니다
+// CreateOrder는 새로운 주문을 생성합니다.
 func (e *Exchange) CreateOrder(request *CreateOrderRequest) (*Order, error) {
 	if request == nil {
 		return nil, ErrInvalidParams
@@ -254,7 +278,7 @@ func (e *Exchange) CancelOrder(params *CancelOrderParams) (*Order, error) {
 	return &order, nil
 }
 
-// GetClosedOrders는 종료된 주문 리스트를 조회합니다.
+// GetClosedOrders는 완료된 주문 목록을 조회합니다.
 func (e *Exchange) GetClosedOrders(params *ClosedOrderParams) ([]Order, error) {
 	queryParams := make(map[string]string)
 
@@ -313,7 +337,7 @@ func (e *Exchange) GetClosedOrders(params *ClosedOrderParams) ([]Order, error) {
 	return orders, nil
 }
 
-// GetOpenOrders는 미체결 주문 리스트를 조회합니다.
+// GetOpenOrders는 미체결 주문 목록을 조회합니다.
 func (e *Exchange) GetOpenOrders(params *OpenOrderParams) ([]Order, error) {
 	queryParams := make(map[string]string)
 
@@ -361,72 +385,7 @@ func (e *Exchange) GetOpenOrders(params *OpenOrderParams) ([]Order, error) {
 	return orders, nil
 }
 
-// OrderChance는 마켓별 주문 가능 정보를 나타내는 구조체입니다.
-type OrderChance struct {
-	// BidFee는 매수 수수료 비율입니다.
-	BidFee string `json:"bid_fee"`
-	// AskFee는 매도 수수료 비율입니다.
-	AskFee string `json:"ask_fee"`
-	// Market은 마켓에 대한 정보입니다.
-	Market OrderMarket `json:"market"`
-	// BidAccount는 매수 시 사용하는 화폐의 계좌 상태입니다.
-	BidAccount OrderAccount `json:"bid_account"`
-	// AskAccount는 매도 시 사용하는 화폐의 계좌 상태입니다.
-	AskAccount OrderAccount `json:"ask_account"`
-}
-
-// OrderMarket은 마켓 정보를 나타내는 구조체입니다.
-type OrderMarket struct {
-	// ID는 마켓의 유일 키입니다.
-	ID string `json:"id"`
-	// Name은 마켓 이름입니다.
-	Name string `json:"name"`
-	// OrderTypes는 지원 주문 방식입니다. (만료 예정)
-	OrderTypes []string `json:"order_types"`
-	// AskTypes는 매도 주문 지원 방식입니다.
-	AskTypes []string `json:"ask_types"`
-	// BidTypes는 매수 주문 지원 방식입니다.
-	BidTypes []string `json:"bid_types"`
-	// OrderSides는 지원 주문 종류입니다.
-	OrderSides []string `json:"order_sides"`
-	// Bid는 매수 시 제약사항입니다.
-	Bid OrderConstraint `json:"bid"`
-	// Ask는 매도 시 제약사항입니다.
-	Ask OrderConstraint `json:"ask"`
-	// MaxTotal은 최대 매도/매수 금액입니다.
-	MaxTotal string `json:"max_total"`
-	// State는 마켓 운영 상태입니다.
-	State string `json:"state"`
-}
-
-// OrderConstraint는 마켓 거래 제약사항을 나타내는 구조체입니다.
-type OrderConstraint struct {
-	// Currency는 화폐를 의미하는 영문 대문자 코드입니다.
-	Currency string `json:"currency"`
-	// PriceUnit은 주문금액 단위입니다.
-	PriceUnit string `json:"price_unit"`
-	// MinTotal은 최소 매도/매수 금액입니다.
-	MinTotal string `json:"min_total"`
-}
-
-// OrderAccount는 매수/매도 계좌 정보를 나타내는 구조체입니다.
-type OrderAccount struct {
-	// Currency는 화폐를 의미하는 영문 대문자 코드입니다.
-	Currency string `json:"currency"`
-	// Balance는 주문가능 금액/수량입니다.
-	Balance string `json:"balance"`
-	// Locked는 주문 중 묶여있는 금액/수량입니다.
-	Locked string `json:"locked"`
-	// AvgBuyPrice는 매수평균가입니다.
-	AvgBuyPrice string `json:"avg_buy_price"`
-	// AvgBuyPriceModified는 매수평균가 수정 여부입니다.
-	AvgBuyPriceModified bool `json:"avg_buy_price_modified"`
-	// UnitCurrency는 평단가 기준 화폐입니다.
-	UnitCurrency string `json:"unit_currency"`
-}
-
 // GetOrderChance는 마켓별 주문 가능 정보를 조회합니다.
-// 엔드포인트: https://api.upbit.com/v1/orders/chance
 func (e *Exchange) GetOrderChance(market string) (*OrderChance, error) {
 	if market == "" {
 		return nil, errors.New("market is required")

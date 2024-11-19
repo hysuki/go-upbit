@@ -7,7 +7,7 @@ import (
 	"github.com/hysuki/go-upbit/websocket/common"
 )
 
-// TickerResponse는 현재가 정보를 담는 구조체입니다
+// TickerResponse는 현재가 정보를 나타냅니다.
 type TickerResponse struct {
 	Type               string               `json:"type"`                  // 타입
 	Code               string               `json:"code"`                  // 마켓 코드
@@ -16,7 +16,7 @@ type TickerResponse struct {
 	LowPrice           float64              `json:"low_price"`             // 저가
 	TradePrice         float64              `json:"trade_price"`           // 현재가
 	PrevClosingPrice   float64              `json:"prev_closing_price"`    // 전일 종가
-	Change             common.ChangeType    `json:"change"`                // RISE, EVEN, FALL
+	Change             common.ChangeType    `json:"change"`                // 전일 대비 (RISE: 상승, EVEN: 보합, FALL: 하락)
 	ChangePrice        float64              `json:"change_price"`          // 변화액의 절대값
 	TradeVolume        float64              `json:"trade_volume"`          // 가장 최근 거래량
 	AccTradeVolume     float64              `json:"acc_trade_volume"`      // 누적 거래량
@@ -36,10 +36,11 @@ type TickerResponse struct {
 	MarketState        common.MarketState   `json:"market_state"`          // 거래상태
 	MarketWarning      common.MarketWarning `json:"market_warning"`        // 거래경고
 	Timestamp          int64                `json:"timestamp"`             // 타임스탬프
-	StreamType         common.StreamType    `json:"stream_type"`           // SNAPSHOT, REALTIME
+	StreamType         common.StreamType    `json:"stream_type"`           // 스트림 타입
 }
 
-// ParseTicker는 JSON 데이터를 Ticker 구조체로 파싱합니다
+// ParseTicker는 JSON 데이터를 TickerResponse 구조체로 파싱합니다.
+// 파싱에 실패하면 에러를 반환합니다.
 func ParseTicker(data []byte) (*TickerResponse, error) {
 	var ticker TickerResponse
 	if err := json.Unmarshal(data, &ticker); err != nil {
@@ -48,31 +49,8 @@ func ParseTicker(data []byte) (*TickerResponse, error) {
 	return &ticker, nil
 }
 
-// SubscribeTicker는 지정된 마켓 코드들의 현재가 정보를 구독합니다
-// func (c *Client) SubscribeTicker(codes []string) error {
-// 	if len(codes) == 0 {
-// 		return fmt.Errorf("마켓 코드는 필수입니다")
-// 	}
-// 	return c.Subscribe("", "ticker", codes, nil)
-// }
-
-// GetTicker는 수신된 메시지를 TickerResponse 구조체로 변환합니다
-// func (c *Client) GetTicker(data []byte) (*TickerResponse, error) {
-
-// 	// 타입 확인
-// 	readMessage := websocket.ReadMessage{}
-// 	if err := json.Unmarshal(data, &readMessage); err != nil {
-// 		return nil, fmt.Errorf("타입 확인 실패: %v", err)
-// 	}
-
-// 	if readMessage.Type != string(Ticker) {
-// 		return nil, nil
-// 	}
-
-// 	return ParseTicker(data)
-// }
-
-// GetTicker waits for the next ticker message
+// GetTicker는 다음 현재가 메시지를 기다립니다.
+// 에러가 발생하면 에러를 반환하고, 성공하면 현재가 정보를 반환합니다.
 func (c *Client) GetTicker() (*TickerResponse, error) {
 	select {
 	case err := <-c.errChan:

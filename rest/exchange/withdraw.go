@@ -7,246 +7,157 @@ import (
 	"time"
 )
 
-// WithdrawState는 출금 상태를 정의합니다.
+// Package exchange는 Upbit 거래소의 출금 관련 API를 제공합니다.
+
+// 출금 상태를 정의하는 상수들입니다.
 const (
-	// WithdrawStateWaiting은 대기중 상태입니다.
-	WithdrawStateWaiting = "WAITING"
-	// WithdrawStateProcessing은 진행중 상태입니다.
-	WithdrawStateProcessing = "PROCESSING"
-	// WithdrawStateDone은 완료 상태입니다.
-	WithdrawStateDone = "DONE"
-	// WithdrawStateFailed는 실패 상태입니다.
-	WithdrawStateFailed = "FAILED"
-	// WithdrawStateCancelled는 취소됨 상태입니다.
-	WithdrawStateCancelled = "CANCELLED"
-	// WithdrawStateRejected는 거절됨 상태입니다.
-	WithdrawStateRejected = "REJECTED"
+	WithdrawStateWaiting    = "WAITING"    // 대기중
+	WithdrawStateProcessing = "PROCESSING" // 진행중
+	WithdrawStateDone       = "DONE"       // 완료
+	WithdrawStateFailed     = "FAILED"     // 실패
+	WithdrawStateCancelled  = "CANCELLED"  // 취소됨
+	WithdrawStateRejected   = "REJECTED"   // 거절됨
 )
 
-// WithdrawTransactionType은 출금 유형을 정의합니다.
+// 출금 유형을 정의하는 상수들입니다.
 const (
-	// WithdrawTransactionTypeDefault는 일반출금입니다.
-	WithdrawTransactionTypeDefault = "default"
-	// WithdrawTransactionTypeInternal은 바로출금입니다.
-	WithdrawTransactionTypeInternal = "internal"
+	WithdrawTransactionTypeDefault  = "default"  // 일반출금
+	WithdrawTransactionTypeInternal = "internal" // 바로출금
 )
 
-// TwoFactorType은 2차 인증 수단을 정의합니다.
+// 2차 인증 수단을 정의하는 상수들입니다.
 const (
-	// TwoFactorTypeKakao는 카카오 인증입니다.
-	TwoFactorTypeKakao = "kakao"
-	// TwoFactorTypeNaver는 네이버 인증입니다.
-	TwoFactorTypeNaver = "naver"
-	// TwoFactorTypeHana는 하나인증서 인증입니다.
-	TwoFactorTypeHana = "hana"
+	TwoFactorTypeKakao = "kakao" // 카카오 인증
+	TwoFactorTypeNaver = "naver" // 네이버 인증
+	TwoFactorTypeHana  = "hana"  // 하나인증서 인증
 )
 
-// WithdrawInfo는 출금 정보를 나타내는 구조체입니다.
+// WithdrawInfo는 출금 정보를 나타냅니다.
 type WithdrawInfo struct {
-	// Type은 입출금 종류입니다.
-	Type string `json:"type,omitempty"`
-	// UUID는 출금의 고유 아이디입니다.
-	UUID string `json:"uuid,omitempty"`
-	// Currency는 화폐를 의미하는 영문 대문자 코드입니다.
-	Currency string `json:"currency,omitempty"`
-	// NetType은 출금 네트워크입니다.
-	NetType string `json:"net_type,omitempty"`
-	// TxID는 출금의 트랜잭션 아이디입니다.
-	TxID string `json:"txid,omitempty"`
-	// State는 출금 상태입니다.
-	State string `json:"state,omitempty"`
-	// CreatedAt은 출금 생성 시간입니다.
-	CreatedAt time.Time `json:"created_at,omitempty"`
-	// DoneAt은 출금 완료 시간입니다.
-	DoneAt time.Time `json:"done_at,omitempty"`
-	// Amount는 출금 금액/수량입니다.
-	Amount string `json:"amount,omitempty"`
-	// Fee는 출금 수수료입니다.
-	Fee string `json:"fee,omitempty"`
-	// TransactionType은 출금 유형입니다.
-	TransactionType string `json:"transaction_type,omitempty"`
+	Type            string    `json:"type,omitempty"`             // 입출금 종류
+	UUID            string    `json:"uuid,omitempty"`             // 출금의 고유 ID
+	Currency        string    `json:"currency,omitempty"`         // 화폐를 의미하는 영문 대문자 코드
+	NetType         string    `json:"net_type,omitempty"`         // 출금 네트워크
+	TxID            string    `json:"txid,omitempty"`             // 출금의 트랜잭션 ID
+	State           string    `json:"state,omitempty"`            // 출금 상태
+	CreatedAt       time.Time `json:"created_at,omitempty"`       // 출금 생성 시각
+	DoneAt          time.Time `json:"done_at,omitempty"`          // 출금 완료 시각
+	Amount          string    `json:"amount,omitempty"`           // 출금 금액/수량
+	Fee             string    `json:"fee,omitempty"`              // 출금 수수료
+	TransactionType string    `json:"transaction_type,omitempty"` // 출금 유형
 }
 
-// WithdrawAddress는 출금 허용 주소 정보를 나타내는 구조체입니다.
+// WithdrawAddress는 출금 허용 주소 정보를 나타냅니다.
 type WithdrawAddress struct {
-	// Currency는 화폐를 의미하는 영문 대문자 코드입니다.
-	Currency string `json:"currency"`
-	// NetType은 출금 네트워크 타입입니다.
-	NetType string `json:"net_type,omitempty"`
-	// NetworkName은 출금 네트워크 이름입니다.
-	NetworkName string `json:"network_name,omitempty"`
-	// WithdrawAddress는 출금 주소입니다.
-	WithdrawAddress string `json:"withdraw_address,omitempty"`
-	// SecondaryAddress는 2차 출금 주소입니다. (필요한 디지털 자산에 한해서)
-	SecondaryAddress string `json:"secondary_address,omitempty"`
+	Currency         string `json:"currency"`                    // 화폐를 의미하는 영문 대문자 코드
+	NetType          string `json:"net_type,omitempty"`          // 출금 네트워크 타입
+	NetworkName      string `json:"network_name,omitempty"`      // 출금 네트워크 이름
+	WithdrawAddress  string `json:"withdraw_address,omitempty"`  // 출금 주소
+	SecondaryAddress string `json:"secondary_address,omitempty"` // 2차 출금 주소
 }
 
-// MemberLevel은 사용자의 보안등급 정보를 나타내는 구조체입니다.
+// MemberLevel은 사용자의 보안등급 정보를 나타냅니다.
 type MemberLevel struct {
-	// SecurityLevel은 사용자의 보안등급입니다.
-	SecurityLevel int `json:"security_level,omitempty"`
-	// FeeLevel은 사용자의 수수료등급입니다.
-	FeeLevel int `json:"fee_level,omitempty"`
-	// EmailVerified는 사용자의 이메일 인증 여부입니다.
-	EmailVerified bool `json:"email_verified,omitempty"`
-	// IdentityAuthVerified는 사용자의 실명 인증 여부입니다.
-	IdentityAuthVerified bool `json:"identity_auth_verified,omitempty"`
-	// BankAccountVerified는 사용자의 계좌 인증 여부입니다.
-	BankAccountVerified bool `json:"bank_account_verified,omitempty"`
-	// TwoFactorAuthVerified는 2FA 인증 수단의 활성화 여부입니다.
-	TwoFactorAuthVerified bool `json:"two_factor_auth_verified,omitempty"`
-	// Locked는 사용자의 계정 보호 상태입니다.
-	Locked bool `json:"locked,omitempty"`
-	// WalletLocked는 사용자의 출금 보호 상태입니다.
-	WalletLocked bool `json:"wallet_locked,omitempty"`
+	SecurityLevel         int  `json:"security_level,omitempty"`           // 사용자의 보안등급
+	FeeLevel              int  `json:"fee_level,omitempty"`                // 사용자의 수수료등급
+	EmailVerified         bool `json:"email_verified,omitempty"`           // 이메일 인증 여부
+	IdentityAuthVerified  bool `json:"identity_auth_verified,omitempty"`   // 실명 인증 여부
+	BankAccountVerified   bool `json:"bank_account_verified,omitempty"`    // 계좌 인증 여부
+	TwoFactorAuthVerified bool `json:"two_factor_auth_verified,omitempty"` // 2FA 인증 수단 활성화 여부
+	Locked                bool `json:"locked,omitempty"`                   // 계정 보호 상태
+	WalletLocked          bool `json:"wallet_locked,omitempty"`            // 출금 보호 상태
 }
 
-// WithdrawCurrency는 화폐 정보를 나타내는 구조체입니다.
+// WithdrawCurrency는 화폐 정보를 나타냅니다.
 type WithdrawCurrency struct {
-	// Code는 화폐를 의미하는 영문 대문자 코드입니다.
-	Code string `json:"code,omitempty"`
-	// WithdrawFee는 해당 화폐의 출금 수수료입니다.
-	WithdrawFee string `json:"withdraw_fee,omitempty"`
-	// IsCoin은 화폐의 디지털 자산 여부입니다.
-	IsCoin bool `json:"is_coin,omitempty"`
-	// WalletState는 해당 화폐의 지갑 상태입니다.
-	WalletState string `json:"wallet_state,omitempty"`
-	// WalletSupport는 해당 화폐가 지원하는 입출금 정보입니다.
-	WalletSupport []string `json:"wallet_support,omitempty"`
+	Code          string   `json:"code,omitempty"`           // 화폐를 의미하는 영문 대문자 코드
+	WithdrawFee   string   `json:"withdraw_fee,omitempty"`   // 출금 수수료
+	IsCoin        bool     `json:"is_coin,omitempty"`        // 디지털 자산 여부
+	WalletState   string   `json:"wallet_state,omitempty"`   // 지갑 상태
+	WalletSupport []string `json:"wallet_support,omitempty"` // 지원하는 입출금 정보
 }
 
-// WithdrawLimit는 출금 제약 정보를 나타내는 구조체입니다.
+// WithdrawLimit는 출금 제약 정보를 나타냅니다.
 type WithdrawLimit struct {
-	// Currency는 화폐를 의미하는 영문 대문자 코드입니다.
-	Currency string `json:"currency,omitempty"`
-	// Minimum은 출금 최소 금액/수량입니다.
-	Minimum string `json:"minimum,omitempty"`
-	// RemainingDailyFiat은 통합 1일 잔여 출금 한도입니다.
-	RemainingDailyFiat string `json:"remaining_daily_fiat,omitempty"`
-	// FiatCurrency는 해당 자산을 구매할 수 있는 법정 화폐입니다.
-	FiatCurrency string `json:"fiat_currency,omitempty"`
-	// WithdrawDelayedFiat은 24시간 출금지연제에 의해 출금 제한되어 있는 금액입니다.
-	WithdrawDelayedFiat string `json:"withdraw_delayed_fiat,omitempty"`
-	// Fixed는 출금 금액/수량 소수점 자리 수입니다.
-	Fixed int `json:"fixed,omitempty"`
-	// CanWithdraw는 출금 지원 여부입니다.
-	CanWithdraw bool `json:"can_withdraw,omitempty"`
+	Currency            string `json:"currency,omitempty"`              // 화폐를 의미하는 영문 대문자 코드
+	Minimum             string `json:"minimum,omitempty"`               // 최소 출금 금액/수량
+	RemainingDailyFiat  string `json:"remaining_daily_fiat,omitempty"`  // 통합 1일 잔여 출금 한도
+	FiatCurrency        string `json:"fiat_currency,omitempty"`         // 구매 가능한 법정 화폐
+	WithdrawDelayedFiat string `json:"withdraw_delayed_fiat,omitempty"` // 출금지연제로 인한 제한 금액
+	Fixed               int    `json:"fixed,omitempty"`                 // 출금 금액/수량 소수점 자리 수
+	CanWithdraw         bool   `json:"can_withdraw,omitempty"`          // 출금 지원 여부
 }
 
-// WithdrawChance는 출금 가능 정보를 나타내는 구조체입니다.
+// WithdrawChance는 출금 가능 정보를 나타냅니다.
 type WithdrawChance struct {
-	// MemberLevel은 사용자의 보안등급 정보입니다.
-	MemberLevel MemberLevel `json:"member_level,omitempty"`
-	// Currency는 화폐 정보입니다.
-	Currency WithdrawCurrency `json:"currency,omitempty"`
-	// Account는 사용자의 계좌 정보입니다.
-	Account Accounts `json:"account,omitempty"`
-	// WithdrawLimit는 출금 제약 정보입니다.
-	WithdrawLimit WithdrawLimit `json:"withdraw_limit,omitempty"`
+	MemberLevel   MemberLevel      `json:"member_level,omitempty"`   // 사용자의 보안등급 정보
+	Currency      WithdrawCurrency `json:"currency,omitempty"`       // 화폐 정보
+	Account       Accounts         `json:"account,omitempty"`        // 사용자의 계좌 정보
+	WithdrawLimit WithdrawLimit    `json:"withdraw_limit,omitempty"` // 출금 제약 정보
 }
 
 // WithdrawKRWParams는 원화 출금을 위한 파라미터입니다.
 type WithdrawKRWParams struct {
-	// Amount는 출금액입니다. (필수)
-	Amount string `json:"amount,omitempty"`
-	// TwoFactorType은 2차 인증 수단입니다. (필수)
-	TwoFactorType string `json:"two_factor_type,omitempty"`
+	Amount        string `json:"amount,omitempty"`          // 출금액
+	TwoFactorType string `json:"two_factor_type,omitempty"` // 2차 인증 수단
 }
 
 // WithdrawKRWResponse는 원화 출금 요청에 대한 응답입니다.
 type WithdrawKRWResponse struct {
-	// Type은 입출금 종류입니다.
-	Type string `json:"type,omitempty"`
-	// UUID는 출금의 고유 아이디입니다.
-	UUID string `json:"uuid,omitempty"`
-	// Currency는 화폐를 의미하는 영문 대문자 코드입니다.
-	Currency string `json:"currency,omitempty"`
-	// TxID는 출금의 트랜잭션 아이디입니다.
-	TxID string `json:"txid,omitempty"`
-	// State는 출금 상태입니다.
-	State string `json:"state,omitempty"`
-	// CreatedAt은 출금 생성 시간입니다.
-	CreatedAt string `json:"created_at,omitempty"`
-	// DoneAt은 출금 완료 시간입니다.
-	DoneAt string `json:"done_at,omitempty"`
-	// Amount는 출금 금액/수량입니다.
-	Amount string `json:"amount,omitempty"`
-	// Fee는 출금 수수료입니다.
-	Fee string `json:"fee,omitempty"`
-	// TransactionType은 출금 유형입니다.
-	TransactionType string `json:"transaction_type,omitempty"`
+	Type            string `json:"type,omitempty"`             // 입출금 종류
+	UUID            string `json:"uuid,omitempty"`             // 출금의 고유 ID
+	Currency        string `json:"currency,omitempty"`         // 화폐를 의미하는 영문 대문자 코드
+	TxID            string `json:"txid,omitempty"`             // 출금의 트랜잭션 ID
+	State           string `json:"state,omitempty"`            // 출금 상태
+	CreatedAt       string `json:"created_at,omitempty"`       // 출금 생성 시각
+	DoneAt          string `json:"done_at,omitempty"`          // 출금 완료 시각
+	Amount          string `json:"amount,omitempty"`           // 출금 금액/수량
+	Fee             string `json:"fee,omitempty"`              // 출금 수수료
+	TransactionType string `json:"transaction_type,omitempty"` // 출금 유형
 }
 
 // WithdrawCoinParams는 디지털 자산 출금을 위한 파라미터입니다.
 type WithdrawCoinParams struct {
-	// Currency는 Currency 코드입니다. (필수)
-	Currency string `json:"currency,omitempty"`
-	// NetType은 출금 네트워크입니다. (필수)
-	NetType string `json:"net_type,omitempty"`
-	// Amount는 출금 수량입니다. (필수)
-	Amount string `json:"amount,omitempty"`
-	// Address는 출금 가능 주소에 등록된 출금 주소입니다. (필수)
-	Address string `json:"address,omitempty"`
-	// SecondaryAddress는 2차 출금 주소입니다. (필요한 디지털 자산에 한해서)
-	SecondaryAddress string `json:"secondary_address,omitempty"`
-	// TransactionType은 출금 유형입니다.
-	TransactionType string `json:"transaction_type,omitempty"`
+	Currency         string `json:"currency,omitempty"`          // Currency 코드
+	NetType          string `json:"net_type,omitempty"`          // 출금 네트워크
+	Amount           string `json:"amount,omitempty"`            // 출금 수량
+	Address          string `json:"address,omitempty"`           // 출금 주소
+	SecondaryAddress string `json:"secondary_address,omitempty"` // 2차 출금 주소
+	TransactionType  string `json:"transaction_type,omitempty"`  // 출금 유형
 }
 
 // WithdrawCoinResponse는 디지털 자산 출금 요청에 대한 응답입니다.
 type WithdrawCoinResponse struct {
-	// Type은 입출금 종류입니다.
-	Type string `json:"type,omitempty"`
-	// UUID는 출금의 고유 아이디입니다.
-	UUID string `json:"uuid,omitempty"`
-	// Currency는 화폐를 의미하는 영문 대문자 코드입니다.
-	Currency string `json:"currency,omitempty"`
-	// NetType은 출금 네트워크입니다.
-	NetType string `json:"net_type,omitempty"`
-	// TxID는 출금의 트랜잭션 아이디입니다.
-	TxID string `json:"txid,omitempty"`
-	// State는 출금 상태입니다.
-	State string `json:"state,omitempty"`
-	// CreatedAt은 출금 생성 시간입니다.
-	CreatedAt string `json:"created_at,omitempty"`
-	// DoneAt은 출금 완료 시간입니다.
-	DoneAt string `json:"done_at,omitempty"`
-	// Amount는 출금 금액/수량입니다.
-	Amount string `json:"amount,omitempty"`
-	// Fee는 출금 수수료입니다.
-	Fee string `json:"fee,omitempty"`
-	// KrwAmount는 원화 환산 가격입니다.
-	KrwAmount string `json:"krw_amount,omitempty"`
-	// TransactionType은 출금 유형입니다.
-	TransactionType string `json:"transaction_type,omitempty"`
+	Type            string `json:"type,omitempty"`             // 입출금 종류
+	UUID            string `json:"uuid,omitempty"`             // 출금의 고유 ID
+	Currency        string `json:"currency,omitempty"`         // 화폐를 의미하는 영문 대문자 코드
+	NetType         string `json:"net_type,omitempty"`         // 출금 네트워크
+	TxID            string `json:"txid,omitempty"`             // 출금의 트랜잭션 ID
+	State           string `json:"state,omitempty"`            // 출금 상태
+	CreatedAt       string `json:"created_at,omitempty"`       // 출금 생성 시각
+	DoneAt          string `json:"done_at,omitempty"`          // 출금 완료 시각
+	Amount          string `json:"amount,omitempty"`           // 출금 금액/수량
+	Fee             string `json:"fee,omitempty"`              // 출금 수수료
+	KrwAmount       string `json:"krw_amount,omitempty"`       // 원화 환산 가격
+	TransactionType string `json:"transaction_type,omitempty"` // 출금 유형
 }
 
 // GetWithdrawParams는 개별 출금 조회를 위한 파라미터입니다.
 type GetWithdrawParams struct {
-	// UUID는 출금 UUID입니다.
-	UUID string `json:"uuid,omitempty"`
-	// TxID는 출금 TXID입니다.
-	TxID string `json:"txid,omitempty"`
-	// Currency는 Currency 코드입니다.
-	Currency string `json:"currency,omitempty"`
+	UUID     string `json:"uuid,omitempty"`     // 출금 UUID
+	TxID     string `json:"txid,omitempty"`     // 출금 TXID
+	Currency string `json:"currency,omitempty"` // Currency 코드
 }
 
 // WithdrawListParams는 출금 리스트 조회를 위한 파라미터입니다.
 type WithdrawListParams struct {
-	// Currency는 Currency 코드입니다.
-	Currency string `json:"currency,omitempty"`
-	// State는 출금 상태입니다.
-	State string `json:"state,omitempty"`
-	// UUIDs는 출금 UUID의 목록입니다.
-	UUIDs []string `json:"uuids,omitempty"`
-	// TxIDs는 출금 TXID의 목록입니다.
-	TxIDs []string `json:"txids,omitempty"`
-	// Limit는 개수 제한입니다. (default: 100, max: 100)
-	Limit int `json:"limit,omitempty"`
-	// Page는 페이지 수입니다. (default: 1)
-	Page int `json:"page,omitempty"`
-	// OrderBy는 정렬 방식입니다.
-	OrderBy string `json:"order_by,omitempty"`
+	Currency string   `json:"currency,omitempty"` // Currency 코드
+	State    string   `json:"state,omitempty"`    // 출금 상태
+	UUIDs    []string `json:"uuids,omitempty"`    // 출금 UUID 목록
+	TxIDs    []string `json:"txids,omitempty"`    // 출금 TXID 목록
+	Limit    int      `json:"limit,omitempty"`    // 개수 제한
+	Page     int      `json:"page,omitempty"`     // 페이지 수
+	OrderBy  string   `json:"order_by,omitempty"` // 정렬 방식
 }
 
 // GetWithdrawAddresses는 등록된 출금 허용 주소 목록을 조회합니다.
@@ -264,7 +175,7 @@ func (e *Exchange) GetWithdrawAddresses() ([]WithdrawAddress, error) {
 	return addresses, nil
 }
 
-// GetWithdrawChance는 해당 통화의 가능한 출금 정보를 조회합니다.
+// GetWithdrawChance는 해당 통화의 출금 가능 정보를 조회합니다.
 func (e *Exchange) GetWithdrawChance(currency string) (*WithdrawChance, error) {
 	if currency == "" {
 		return nil, errors.New("currency is required")
