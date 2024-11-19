@@ -8,7 +8,7 @@ import (
 )
 
 // MyOrder는 내 주문 정보를 담는 구조체입니다
-type MyOrder struct {
+type MyOrderResponse struct {
 	Type            string             `json:"type"`             // 타입 (myOrder)
 	Code            string             `json:"code"`             // 마켓 코드
 	UUID            string             `json:"uuid"`             // 주문 고유 아이디
@@ -35,21 +35,21 @@ type MyOrder struct {
 }
 
 // ParseMyOrder는 JSON 데이터를 MyOrder 구조체로 파싱합니다
-func ParseMyOrder(data []byte) (*MyOrder, error) {
-	var myOrder MyOrder
+func ParseMyOrder(data []byte) (*MyOrderResponse, error) {
+	var myOrder MyOrderResponse
 	if err := json.Unmarshal(data, &myOrder); err != nil {
 		return nil, fmt.Errorf("내 주문 데이터 파싱 실패: %v", err)
 	}
 	return &myOrder, nil
 }
 
-// SubscribeMyOrder는 지정된 마켓 코드들의 내 주문 정보를 구독합니다
-func (c *Client) SubscribeMyOrder(codes []string) error {
-	return c.Subscribe("", "myOrder", codes, nil)
-}
+// // SubscribeMyOrder는 지정된 마켓 코드들의 내 주문 정보를 구독합니다
+// func (c *Client) SubscribeMyOrder(codes []string) error {
+// 	return c.Subscribe("", "myOrder", codes, nil)
+// }
 
 // GetMyOrder는 수신된 메시지를 MyOrder 구조체로 변환합니다
-func (c *Client) GetMyOrder() (*MyOrder, error) {
+func (c *Client) GetMyOrder() (*MyOrderResponse, error) {
 	data, err := c.ReadMessage()
 	if err != nil {
 		return nil, err

@@ -1,15 +1,30 @@
 package public
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hysuki/go-upbit/auth"
 	"github.com/hysuki/go-upbit/websocket"
+	"github.com/hysuki/go-upbit/websocket/common"
 )
 
 // Client는 공개 WebSocket API 클라이언트입니다.
 type Client struct {
 	*websocket.BaseClient
+}
+
+type MessageType string
+
+const (
+	Ticker    MessageType = "ticker"
+	Orderbook MessageType = "orderbook"
+	Trade     MessageType = "trade"
+)
+
+type Message struct {
+	websocket.Message
+	Type MessageType `json:"type,omitempty"` // 메시지 타입
 }
 
 // NewClient는 새로운 공개 WebSocket 클라이언트를 생성합니다.
@@ -28,7 +43,20 @@ func NewClient(endpoint string, tokenGen *auth.WebSocketTokenGen, pingInterval t
 	return client, nil
 }
 
-// Message는 WebSocket 메시지를 처리합니다.
-func (c *Client) Message() error {
-	return nil
+// AddSubscribe는 public 전용 구독 함수를 생성합니다
+func AddSubscribe(messageType MessageType, codes []string, options *common.SubscribeOptions) websocket.SubscribeFunc {
+	if len(codes) == 0 {
+		return func(c *websocket.BaseClient) error {
+			return fmt.Errorf("codes는 최소 하나 이상의 마켓 코드를 포함해야 합니다")
+		}
+	}
+	return websocket.AddSubscribe(string(messageType), codes, options)
+}
+
+// Subscribe는 public 전용 구독 메서드입니다
+func (c *Client) Subscribe(ticket *string, f ...websocket.SubscribeFunc) error {
+	if len(f) == 0 {
+		return fmt.Errorf("구독 함수가 제공되지 않았습니다")
+	}
+	return c.BaseClient.Subscribe(ticket, f...)
 }

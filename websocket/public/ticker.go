@@ -7,8 +7,8 @@ import (
 	"github.com/hysuki/go-upbit/websocket/common"
 )
 
-// Ticker는 현재가 정보를 담는 구조체입니다
-type Ticker struct {
+// TickerResponse는 현재가 정보를 담는 구조체입니다
+type TickerResponse struct {
 	Type               string               `json:"type"`                  // 타입
 	Code               string               `json:"code"`                  // 마켓 코드
 	OpeningPrice       float64              `json:"opening_price"`         // 시가
@@ -40,8 +40,8 @@ type Ticker struct {
 }
 
 // ParseTicker는 JSON 데이터를 Ticker 구조체로 파싱합니다
-func ParseTicker(data []byte) (*Ticker, error) {
-	var ticker Ticker
+func ParseTicker(data []byte) (*TickerResponse, error) {
+	var ticker TickerResponse
 	if err := json.Unmarshal(data, &ticker); err != nil {
 		return nil, fmt.Errorf("티커 데이터 파싱 실패: %v", err)
 	}
@@ -49,15 +49,15 @@ func ParseTicker(data []byte) (*Ticker, error) {
 }
 
 // SubscribeTicker는 지정된 마켓 코드들의 현재가 정보를 구독합니다
-func (c *Client) SubscribeTicker(codes []string) error {
-	if len(codes) == 0 {
-		return fmt.Errorf("마켓 코드는 필수입니다")
-	}
-	return c.Subscribe("", "ticker", codes, nil)
-}
+// func (c *Client) SubscribeTicker(codes []string) error {
+// 	if len(codes) == 0 {
+// 		return fmt.Errorf("마켓 코드는 필수입니다")
+// 	}
+// 	return c.Subscribe("", "ticker", codes, nil)
+// }
 
-// GetTicker는 수신된 메시지를 Ticker 구조체로 변환합니다
-func (c *Client) GetTicker() (*Ticker, error) {
+// GetTicker는 수신된 메시지를 TickerResponse 구조체로 변환합니다
+func (c *Client) GetTicker() (*TickerResponse, error) {
 	data, err := c.ReadMessage()
 	if err != nil {
 		return nil, err

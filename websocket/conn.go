@@ -11,42 +11,43 @@ import (
 )
 
 type BaseClient struct {
-	conn         *websocket.Conn
-	ctx          context.Context
-	cancel       context.CancelFunc
-	isRunning    bool
-	mu           sync.Mutex
-	endpoint     string
-	tokenGen     auth.WebSocketTokenGenerator
-	pingTicker   *time.Ticker
-	pingInterval time.Duration
+	Conn         *websocket.Conn
+	Ctx          context.Context
+	Cancel       context.CancelFunc
+	IsRunning    bool
+	Mu           sync.Mutex
+	Messages     []Message
+	Endpoint     string
+	TokenGen     auth.WebSocketTokenGenerator
+	PingTicker   *time.Ticker
+	PingInterval time.Duration
 }
 
 func NewBaseClient(endpoint string, tokenGen auth.WebSocketTokenGenerator, pingInterval time.Duration) *BaseClient {
 	return &BaseClient{
-		endpoint:     endpoint,
-		tokenGen:     tokenGen,
-		pingInterval: pingInterval,
+		Endpoint:     endpoint,
+		TokenGen:     tokenGen,
+		PingInterval: pingInterval,
 	}
 }
 
 func (c *BaseClient) Connect() error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.Mu.Lock()
+	defer c.Mu.Unlock()
 
-	if c.isRunning {
+	if c.IsRunning {
 		return nil
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	token, err := c.tokenGen.GenerateToken()
+	token, err := c.TokenGen.GenerateToken()
 	if err != nil {
 		cancel()
 		return fmt.Errorf("토큰 생성 실패: %w", err)
 	}
 
-	conn, _, err := websocket.Dial(ctx, c.endpoint, &websocket.DialOptions{
+	conn, _, err := websocket.Dial(ctx, c.Endpoint, &websocket.DialOptions{
 		HTTPHeader: map[string][]string{
 			"Authorization": {token},
 		},
@@ -57,20 +58,20 @@ func (c *BaseClient) Connect() error {
 		return fmt.Errorf("웹소켓 연결 실패: %w", err)
 	}
 
-	c.conn = conn
-	c.ctx = ctx
-	c.cancel = cancel
-	c.isRunning = true
+	c.Conn = conn
+	c.Ctx = ctx
+	c.Cancel = cancel
+	c.IsRunning = true
 
 	c.startPingLoop()
 	return nil
 }
 
 func (c *BaseClient) Ping() error {
-	c.mu.Lock()
-	conn := c.conn
-	ctx := c.ctx
-	c.mu.Unlock()
+	c.Mu.Lock()
+	conn := c.Conn
+	ctx := c.Ctx
+	c.Mu.Unlock()
 
 	if conn == nil {
 		return fmt.Errorf("웹소켓 연결이 없습니다")
@@ -79,26 +80,26 @@ func (c *BaseClient) Ping() error {
 }
 
 func (c *BaseClient) Close() error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.Mu.Lock()
+	defer c.Mu.Unlock()
 
-	if !c.isRunning {
+	if !c.IsRunning {
 		return nil
 	}
 
-	c.isRunning = false
-	if c.pingTicker != nil {
-		c.pingTicker.Stop()
-		c.pingTicker = nil
+	c.IsRunning = false
+	if c.PingTicker != nil {
+		c.PingTicker.Stop()
+		c.PingTicker = nil
 	}
 
-	if c.conn != nil {
-		err := c.conn.Close(websocket.StatusNormalClosure, "정상 종료")
-		if c.cancel != nil {
-			c.cancel()
-			c.cancel = nil
+	if c.Conn != nil {
+		err := c.Conn.Close(websocket.StatusNormalClosure, "정상 종료")
+		if c.Cancel != nil {
+			c.Cancel()
+			c.Cancel = nil
 		}
-		c.conn = nil
+		c.Conn = nil
 		return err
 	}
 	return nil
@@ -112,18 +113,18 @@ func (c *BaseClient) Reconnect() error {
 }
 
 func (c *BaseClient) startPingLoop() {
-	if c.pingInterval == 0 {
+	if c.PingInterval == 0 {
 		return
 	}
 
-	c.pingTicker = time.NewTicker(c.pingInterval)
+	c.PingTicker = time.NewTicker(c.PingInterval)
 
 	go func() {
 		for {
 			select {
-			case <-c.ctx.Done():
+			case <-c.Ctx.Done():
 				return
-			case <-c.pingTicker.C:
+			case <-c.PingTicker.C:
 				if err := c.Ping(); err != nil {
 					fmt.Printf("핑 전송 실패: %v\n", err)
 					if err := c.Reconnect(); err != nil {

@@ -3,12 +3,10 @@ package public
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/hysuki/go-upbit/websocket/common"
 )
 
-// OrderBook는 호가 정보를 담는 구조체입니다
-type OrderBook struct {
+// OrderBookResponse는 호가 정보를 담는 구조체입니다
+type OrderBookResponse struct {
 	Type           string          `json:"type"`            // 타입 (orderbook)
 	Code           string          `json:"code"`            // 마켓 코드
 	TotalAskSize   float64         `json:"total_ask_size"`  // 호가 매도 총 잔량
@@ -27,24 +25,24 @@ type OrderBookUnit struct {
 }
 
 // ParseOrderBook는 JSON 데이터를 OrderBook 구조체로 파싱합니다
-func ParseOrderBook(data []byte) (*OrderBook, error) {
-	var orderBook OrderBook
-	if err := json.Unmarshal(data, &orderBook); err != nil {
+func ParseOrderBook(data []byte) (*OrderBookResponse, error) {
+	var orderbook OrderBookResponse
+	if err := json.Unmarshal(data, &orderbook); err != nil {
 		return nil, fmt.Errorf("호가 데이터 파싱 실패: %v", err)
 	}
-	return &orderBook, nil
+	return &orderbook, nil
 }
 
 // SubscribeOrderBook는 지정된 마켓 코드들의 호가 정보를 구독합니다
-func (c *Client) SubscribeOrderBook(codes []string, options *common.SubscribeOptions) error {
-	if len(codes) == 0 {
-		return fmt.Errorf("마켓 코드는 필수입니다")
-	}
-	return c.Subscribe("", "orderbook", codes, options)
-}
+// func (c *Client) SubscribeOrderBook(codes []string, options *common.SubscribeOptions) error {
+// 	if len(codes) == 0 {
+// 		return fmt.Errorf("마켓 코드는 필수입니다")
+// 	}
+// 	return c.Subscribe("", "orderbook", codes, options)
+// }
 
-// GetOrderBook는 수신된 메시지를 OrderBook 구조체로 변환합니다
-func (c *Client) GetOrderBook() (*OrderBook, error) {
+// GetOrderBook는 수신된 메시지를 OrderBookResponse 구조체로 변환합니다
+func (c *Client) GetOrderBook() (*OrderBookResponse, error) {
 	data, err := c.ReadMessage()
 	if err != nil {
 		return nil, err

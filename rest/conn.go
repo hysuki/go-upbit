@@ -150,9 +150,6 @@ func (c *client) Post(path string, body interface{}) ([]byte, error) {
 	// url.Values로 인코딩된 문자열 생성
 	encodedBody := values.Encode()
 
-	// 디버깅을 위한 출력
-	fmt.Printf("Encoded body: %s\n", encodedBody)
-
 	// 동일한 values로 토큰 생성
 	token, err := c.tokenGen.GenerateTokenWithQuery(values)
 	if err != nil {
