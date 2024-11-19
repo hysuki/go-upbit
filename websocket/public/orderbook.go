@@ -42,14 +42,27 @@ func ParseOrderBook(data []byte) (*OrderBookResponse, error) {
 // }
 
 // GetOrderBook는 수신된 메시지를 OrderBookResponse 구조체로 변환합니다
-func (c *Client) GetOrderBook() (*OrderBookResponse, error) {
-	data, err := c.ReadMessage()
-	if err != nil {
-		return nil, err
-	}
-	if data == nil {
-		return nil, nil // 서버 상태 메시지인 경우
-	}
+// func (c *Client) GetOrderBook(data []byte) (*OrderBookResponse, error) {
 
-	return ParseOrderBook(data)
+// 	// 타입 확인
+// 	readMessage := websocket.ReadMessage{}
+// 	if err := json.Unmarshal(data, &readMessage); err != nil {
+// 		return nil, fmt.Errorf("타입 확인 실패: %v", err)
+// 	}
+
+// 	if readMessage.Type != string(Orderbook) {
+// 		return nil, nil
+// 	}
+
+// 	return ParseOrderBook(data)
+// }
+
+// GetOrderBook waits for the next order book message
+func (c *Client) GetOrderBook() (*OrderBookResponse, error) {
+	select {
+	case err := <-c.errChan:
+		return nil, err
+	case resp := <-c.orderBookChan:
+		return resp, nil
+	}
 }

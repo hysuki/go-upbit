@@ -3,6 +3,7 @@ package websocket
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/coder/websocket"
 	"github.com/google/uuid"
@@ -29,15 +30,27 @@ type SubscribeFunc func(*BaseClient) error
 func AddSubscribe(messageType string, codes []string, options *common.SubscribeOptions) SubscribeFunc {
 	return func(c *BaseClient) error {
 		var message Message
+		upperCodes := []string{}
+
+		// 코드 대문자로 변환
+		for _, code := range codes {
+			// - 가 있는지 확인
+			if strings.Contains(code, "-") {
+				upperCodes = append(upperCodes, strings.ToUpper(code))
+			} else {
+				return fmt.Errorf("마켓 코드 오류: %s", code)
+			}
+		}
+
 		if options == nil {
 			message = Message{
 				Type:  messageType,
-				Codes: codes,
+				Codes: upperCodes,
 			}
 		} else {
 			message = Message{
 				Type:           messageType,
-				Codes:          codes,
+				Codes:          upperCodes,
 				Level:          options.Level,
 				IsOnlySnapshot: options.IsOnlySnapshot,
 				IsOnlyRealtime: options.IsOnlyRealtime,
@@ -92,7 +105,11 @@ func (c *BaseClient) WriteJSON(v interface{}) error {
 	return c.Conn.Write(c.Ctx, websocket.MessageText, data)
 }
 
-// ReadMessage도 mutex로 보호
+type ReadMessage struct {
+	Type string `json:"type"`
+	Code string `json:"code"`
+}
+
 func (c *BaseClient) ReadMessage() ([]byte, error) {
 	if c.Conn == nil {
 		if err := c.Connect(); err != nil {

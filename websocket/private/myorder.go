@@ -43,20 +43,11 @@ func ParseMyOrder(data []byte) (*MyOrderResponse, error) {
 	return &myOrder, nil
 }
 
-// // SubscribeMyOrder는 지정된 마켓 코드들의 내 주문 정보를 구독합니다
-// func (c *Client) SubscribeMyOrder(codes []string) error {
-// 	return c.Subscribe("", "myOrder", codes, nil)
-// }
-
-// GetMyOrder는 수신된 메시지를 MyOrder 구조체로 변환합니다
 func (c *Client) GetMyOrder() (*MyOrderResponse, error) {
-	data, err := c.ReadMessage()
-	if err != nil {
+	select {
+	case err := <-c.errChan:
 		return nil, err
+	case resp := <-c.myOrderChan:
+		return resp, nil
 	}
-	if data == nil {
-		return nil, nil // 서버 상태 메시지인 경우
-	}
-
-	return ParseMyOrder(data)
 }

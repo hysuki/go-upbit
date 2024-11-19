@@ -33,21 +33,12 @@ func ParseMyAsset(data []byte) (*MyAssetResponse, error) {
 	return &myAsset, nil
 }
 
-// // SubscribeMyAsset은 내 자산 정보를 구독합니다
-// func (c *Client) SubscribeMyAsset() error {
-// 	// MyAsset은 codes 필드를 사용하지 않으므로 nil을 전달합니다
-// 	return c.Subscribe("", "myAsset", nil, nil)
-// }
-
-// GetMyAsset은 수신된 메시지를 MyAsset 구조체로 변환합니다
+// GetMyAsset waits for the next my asset message
 func (c *Client) GetMyAsset() (*MyAssetResponse, error) {
-	data, err := c.ReadMessage()
-	if err != nil {
+	select {
+	case err := <-c.errChan:
 		return nil, err
+	case resp := <-c.myAssetChan:
+		return resp, nil
 	}
-	if data == nil {
-		return nil, nil // 서버 상태 메시지인 경우
-	}
-
-	return ParseMyAsset(data)
 }
