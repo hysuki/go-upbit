@@ -13,8 +13,8 @@ import (
 // Client는 개인 웹소켓 클라이언트입니다.
 type Client struct {
 	*websocket.BaseClient
-	myOrderChan chan *MyOrderResponse
-	myAssetChan chan *MyAssetResponse
+	myOrderChan chan *UpbitMyOrder
+	myAssetChan chan *UpbitMyAsset
 	errChan     chan error
 	done        chan struct{}
 }
@@ -24,8 +24,8 @@ type MessageType string
 
 // 메시지 유형을 정의하는 상수들입니다.
 const (
-	MyOrder MessageType = "myOrder"
-	MyAsset MessageType = "myAsset"
+	MessageTypeMyOrder MessageType = "myOrder"
+	MessageTypeMyAsset MessageType = "myAsset"
 )
 
 // Message는 웹소켓 메시지를 나타냅니다.
@@ -41,8 +41,8 @@ func NewClient(endpoint string, tokenGen *auth.WebSocketTokenGen, pingInterval t
 
 	client := &Client{
 		BaseClient:  base,
-		myOrderChan: make(chan *MyOrderResponse, 1000),
-		myAssetChan: make(chan *MyAssetResponse, 1000),
+		myOrderChan: make(chan *UpbitMyOrder, 1000),
+		myAssetChan: make(chan *UpbitMyAsset, 1000),
 		errChan:     make(chan error, 1000),
 		done:        make(chan struct{}),
 	}
@@ -57,7 +57,7 @@ func NewClient(endpoint string, tokenGen *auth.WebSocketTokenGen, pingInterval t
 // AddSubscribe는 구독 함수를 생성합니다.
 // messageType은 메시지 유형, codes는 마켓 코드 목록, options는 구독 옵션입니다.
 func AddSubscribe(messageType MessageType, codes []string, options *common.SubscribeOptions) websocket.SubscribeFunc {
-	if messageType == MyAsset && len(codes) != 0 {
+	if messageType == MessageTypeMyAsset && len(codes) != 0 {
 		return func(c *websocket.BaseClient) error {
 			return fmt.Errorf("MyAsset 타입은 마켓 코드를 지정할 수 없습니다")
 		}
@@ -95,13 +95,13 @@ func (c *Client) StartMessageHandler() {
 
 				// 메시지 타입에 따라 적절한 채널로 전송
 				switch readMessage.Type {
-				case string(MyOrder):
+				case string(MessageTypeMyOrder):
 					if resp, err := ParseMyOrder(data); err != nil {
 						c.errChan <- err
 					} else {
 						c.myOrderChan <- resp
 					}
-				case string(MyAsset):
+				case string(MessageTypeMyAsset):
 					if resp, err := ParseMyAsset(data); err != nil {
 						c.errChan <- err
 					} else {

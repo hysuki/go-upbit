@@ -14,9 +14,9 @@ import (
 // Client는 공개 웹소켓 클라이언트입니다.
 type Client struct {
 	*websocket.BaseClient
-	orderBookChan chan *OrderBookResponse
-	tickerChan    chan *TickerResponse
-	tradeChan     chan *TradeResponse
+	orderBookChan chan *UpbitOrderbook
+	tickerChan    chan *UpbitTicker
+	tradeChan     chan *UpbitTrade
 	errChan       chan error
 	done          chan struct{}
 }
@@ -26,9 +26,9 @@ type MessageType string
 
 // 메시지 유형을 정의하는 상수들입니다.
 const (
-	Ticker    MessageType = "ticker"
-	Orderbook MessageType = "orderbook"
-	Trade     MessageType = "trade"
+	MessageTypeTicker    MessageType = "ticker"
+	MessageTypeOrderbook MessageType = "orderbook"
+	MessageTypeTrade     MessageType = "trade"
 )
 
 // Message는 웹소켓 메시지를 나타냅니다.
@@ -44,9 +44,9 @@ func NewClient(endpoint string, tokenGen *auth.WebSocketTokenGen, pingInterval t
 
 	client := &Client{
 		BaseClient:    base,
-		orderBookChan: make(chan *OrderBookResponse, 1000),
-		tickerChan:    make(chan *TickerResponse, 1000),
-		tradeChan:     make(chan *TradeResponse, 1000),
+		orderBookChan: make(chan *UpbitOrderbook, 1000),
+		tickerChan:    make(chan *UpbitTicker, 1000),
+		tradeChan:     make(chan *UpbitTrade, 1000),
 		errChan:       make(chan error, 1000),
 		done:          make(chan struct{}),
 	}
@@ -102,19 +102,19 @@ func (c *Client) StartMessageHandler() {
 
 				// 메시지 타입에 따라 적절한 채널로 전송
 				switch readMessage.Type {
-				case string(Orderbook):
+				case string(MessageTypeOrderbook):
 					if resp, err := ParseOrderBook(data); err != nil {
 						c.errChan <- err
 					} else {
 						c.orderBookChan <- resp
 					}
-				case string(Ticker):
+				case string(MessageTypeTicker):
 					if resp, err := ParseTicker(data); err != nil {
 						c.errChan <- err
 					} else {
 						c.tickerChan <- resp
 					}
-				case string(Trade):
+				case string(MessageTypeTrade):
 					if resp, err := ParseTrade(data); err != nil {
 						c.errChan <- err
 					} else {
