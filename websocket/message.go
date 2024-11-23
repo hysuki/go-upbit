@@ -126,7 +126,7 @@ type ReadMessage struct {
 func (c *BaseClient) ReadMessage() ([]byte, error) {
 	if c.Conn == nil {
 		if err := c.Connect(); err != nil {
-			return nil, fmt.Errorf("재연결 실패: %v", err)
+			return nil, fmt.Errorf("연결 실패: %v", err)
 		}
 	}
 
@@ -148,8 +148,15 @@ func (c *BaseClient) ReadMessage() ([]byte, error) {
 
 	// 서버 상태 응답 확인
 	var status StatusResponse
-	if err := json.Unmarshal(data, &status); err == nil && status.Status == "UP" {
-		return nil, nil
+	if err := json.Unmarshal(data, &status); err == nil {
+		if status.Status == "UP" {
+			return nil, nil
+		} else if status.Status == "DOWN" {
+			if err := c.Reconnect(); err != nil {
+				return nil, fmt.Errorf("서버 다운으로 인한 재연결 실패: %v", err)
+			}
+			return nil, nil
+		}
 	}
 
 	return data, nil
