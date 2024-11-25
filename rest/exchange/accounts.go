@@ -6,7 +6,7 @@ import (
 )
 
 // Accounts는 Upbit 거래소의 계좌 정보를 나타내는 구조체입니다.
-type Accounts struct {
+type Account struct {
 	// Currency는 화폐를 나타내는 영문 대문자 코드입니다.
 	// 예: KRW, BTC, ETH
 	Currency string `json:"currency,omitempty"`
@@ -32,13 +32,13 @@ type Accounts struct {
 // GetAccounts는 보유한 자산 리스트를 조회합니다.
 // 이 메서드는 인증이 필요한 API를 호출하며, 전체 계좌 잔고와 관련 정보를 반환합니다.
 // 에러가 발생한 경우 error를 반환합니다.
-func (e *Exchange) GetAccounts() ([]Accounts, error) {
+func (e *Exchange) GetAccounts() ([]Account, error) {
 	resp, err := e.Client.Get("/accounts", nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var accounts []Accounts
+	var accounts []Account
 	if err := json.Unmarshal(resp, &accounts); err != nil {
 		return nil, err
 	}

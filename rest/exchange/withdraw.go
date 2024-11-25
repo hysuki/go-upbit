@@ -92,7 +92,7 @@ type WithdrawLimit struct {
 type WithdrawChance struct {
 	MemberLevel   MemberLevel      `json:"member_level,omitempty"`   // 사용자의 보안등급 정보
 	Currency      WithdrawCurrency `json:"currency,omitempty"`       // 화폐 정보
-	Account       Accounts         `json:"account,omitempty"`        // 사용자의 계좌 정보
+	Account       Account          `json:"account,omitempty"`        // 사용자의 계좌 정보
 	WithdrawLimit WithdrawLimit    `json:"withdraw_limit,omitempty"` // 출금 제약 정보
 }
 

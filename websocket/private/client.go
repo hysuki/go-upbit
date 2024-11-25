@@ -20,18 +20,18 @@ type Client struct {
 }
 
 // MessageType은 메시지 유형을 나타냅니다.
-type MessageType string
+type PrivateMessageType string
 
 // 메시지 유형을 정의하는 상수들입니다.
 const (
-	MessageTypeMyOrder MessageType = "myOrder"
-	MessageTypeMyAsset MessageType = "myAsset"
+	MessageTypeMyOrder PrivateMessageType = "myOrder"
+	MessageTypeMyAsset PrivateMessageType = "myAsset"
 )
 
 // Message는 웹소켓 메시지를 나타냅니다.
 type Message struct {
 	websocket.Message
-	Type MessageType `json:"type,omitempty"`
+	Type PrivateMessageType `json:"type,omitempty"`
 }
 
 // NewClient는 새로운 개인 웹소켓 클라이언트를 생성합니다.
@@ -56,7 +56,7 @@ func NewClient(endpoint string, tokenGen *auth.WebSocketTokenGen, pingInterval t
 
 // AddSubscribe는 구독 함수를 생성합니다.
 // messageType은 메시지 유형, codes는 마켓 코드 목록, options는 구독 옵션입니다.
-func AddSubscribe(messageType MessageType, codes []string, options *common.SubscribeOptions) websocket.SubscribeFunc {
+func AddSubscribe(messageType PrivateMessageType, codes []string, options *common.SubscribeOptions) websocket.SubscribeFunc {
 	if messageType == MessageTypeMyAsset && len(codes) != 0 {
 		return func(c *websocket.BaseClient) error {
 			return fmt.Errorf("MyAsset 타입은 마켓 코드를 지정할 수 없습니다")
