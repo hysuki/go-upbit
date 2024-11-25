@@ -103,56 +103,53 @@ log.Printf("주문 결과: %+v", order)
 ```go
 // 원화 마켓 코드 필터링
 var codes []string
+markets, err := client.RestAPI.GetQuotation().GetMarkets(false)
+if err != nil {
+    log.Fatal(err)
+}
+
 for _, market := range markets {
-	if strings.HasPrefix(market.Market, "KRW-") {
-		codes = append(codes, market.Market)
-	}
+    if strings.HasPrefix(market.Market, "KRW-") {
+        codes = append(codes, market.Market)
+    }
 }
 
 // WebSocket 구독 설정
+isOnlyRealtime := true
+opts := common.SubscribeOptions{
+    IsOnlyRealtime: &isOnlyRealtime,
+}
+
 client.PublicWS.Subscribe(nil,
-	public.AddSubscribe(public.Orderbook, codes, nil),
-	public.AddSubscribe(public.Ticker, codes, nil),
-	public.AddSubscribe(public.Trade, codes, nil),
+    public.AddSubscribe(public.MessageTypeOrderbook, codes, &opts),
+    public.AddSubscribe(public.MessageTypeTicker, codes, &opts),
+    public.AddSubscribe(public.MessageTypeTrade, codes, &opts),
 )
 
 // 메시지 핸들러 시작
 client.PublicWS.StartMessageHandler()
 
-// 호가 정보 처리
-go func() {
-	for {
-		orderBook, err := client.PublicWS.GetOrderBook()
-		if err != nil {
-			log.Printf("호가 에러: %v", err)
-			continue
-		}
-		log.Printf("호가: %+v", orderBook)
-	}
-}()
-
 // 현재가 정보 처리
 go func() {
-	for {
-		ticker, err := client.PublicWS.GetTicker()
-		if err != nil {
-			log.Printf("현재가 에러: %v", err)
-			continue
-		}
-		log.Printf("현재가: %+v", ticker)
-	}
+    onTicker(ctx, client, func(ticker *public.Ticker) {
+        log.Printf("현재가: %+v", ticker)
+    })
 }()
 
 // 체결 정보 처리
+tradeChan := make(chan *public.Trade, 1000)
 go func() {
-	for {
-		trade, err := client.PublicWS.GetTrade()
-		if err != nil {
-			log.Printf("체결 에러: %v", err)
-			continue
-		}
-		log.Printf("체결: %+v", trade)
-	}
+    onTrade(ctx, client, func(trade *public.Trade) {
+        log.Printf("체결: %+v", trade)
+        tradeChan <- trade
+    })
+}()
+
+// 호가 정보 처리
+go func() {
+    onOrderBook(ctx, client, func(orderBook *public.Orderbook) {
+        log.Printf("호가: %+v", orderBook)
+    })
 }()
 ```
 
