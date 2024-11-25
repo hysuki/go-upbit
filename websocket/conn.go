@@ -82,14 +82,23 @@ func (c *BaseClient) Connect() error {
 // 연결이 없으면 에러를 반환합니다.
 func (c *BaseClient) Ping() error {
 	c.Mu.Lock()
+	if !c.IsRunning || c.Conn == nil {
+		c.Mu.Unlock()
+		return fmt.Errorf("failed to ping: use of closed network connection")
+	}
 	conn := c.Conn
 	ctx := c.Ctx
 	c.Mu.Unlock()
 
-	if conn == nil {
-		return fmt.Errorf("웹소켓 연결이 없습니다")
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("컨텍스트 취소됨")
+	default:
+		if err := conn.Ping(ctx); err != nil {
+			return fmt.Errorf("failed to ping: %w", err)
+		}
+		return nil
 	}
-	return conn.Ping(ctx)
 }
 
 // Close는 웹소켓 연결을 종료합니다.
@@ -180,12 +189,24 @@ func (c *BaseClient) startPingLoop() {
 				return
 			case <-c.PingTicker.C:
 				if err := c.Ping(); err != nil {
-					fmt.Printf("핑 전송 실패: %v\n", err)
-					if err := c.Reconnect(); err != nil {
-						fmt.Printf("재연결 실패: %v\n", err)
-						// 재연결 실패 시 연결 종료
-						c.Close()
+					if strings.Contains(err.Error(), "컨텍스트 취소됨") {
 						return
+					}
+					fmt.Printf("핑 전송 실패: %v\n", err)
+
+					// 연결이 닫혔거나 실패한 경우 재연결 시도
+					if strings.Contains(err.Error(), "use of closed network connection") ||
+						strings.Contains(err.Error(), "failed to ping") {
+						for i := 0; i < c.maxReconnectTries; i++ {
+							fmt.Printf("재연결 시도 %d/%d...\n", i+1, c.maxReconnectTries)
+							if err := c.Reconnect(); err != nil {
+								fmt.Printf("재연결 실패: %v\n", err)
+								time.Sleep(c.reconnectWait * time.Duration(i+1))
+								continue
+							}
+							fmt.Println("재연결 성공")
+							break
+						}
 					}
 				}
 			}

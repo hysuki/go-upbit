@@ -124,40 +124,51 @@ type ReadMessage struct {
 // ReadMessage는 웹소켓으로부터 메시지를 읽어옵니다.
 // 연결이 끊어진 경우 재연결을 시도합니다.
 func (c *BaseClient) ReadMessage() ([]byte, error) {
-	if c.Conn == nil {
+	c.Mu.Lock()
+	if !c.IsRunning || c.Conn == nil {
+		c.Mu.Unlock()
 		if err := c.Connect(); err != nil {
 			return nil, fmt.Errorf("연결 실패: %v", err)
 		}
+	} else {
+		c.Mu.Unlock()
 	}
 
-	_, data, err := c.Conn.Read(c.Ctx)
-	if err != nil {
-		if websocket.CloseStatus(err) != -1 {
-			if err := c.Reconnect(); err != nil {
-				return nil, fmt.Errorf("재연결 실패: %v", err)
-			}
-			// 재연결 후 다시 읽기 시도
-			_, data, err = c.Conn.Read(c.Ctx)
-			if err != nil {
+	select {
+	case <-c.Ctx.Done():
+		return nil, fmt.Errorf("컨텍스트 취소됨")
+	default:
+		_, data, err := c.Conn.Read(c.Ctx)
+		if err != nil {
+			if websocket.CloseStatus(err) != -1 ||
+				strings.Contains(err.Error(), "failed to get reader") ||
+				strings.Contains(err.Error(), "use of closed network connection") {
+				if err := c.Reconnect(); err != nil {
+					return nil, fmt.Errorf("재연결 실패: %v", err)
+				}
+				// 재연결 후 다시 읽기 시도
+				_, data, err = c.Conn.Read(c.Ctx)
+				if err != nil {
+					return nil, fmt.Errorf("메시지 읽기 실패: %v", err)
+				}
+			} else {
 				return nil, fmt.Errorf("메시지 읽기 실패: %v", err)
 			}
-		} else {
-			return nil, fmt.Errorf("메시지 읽기 실패: %v", err)
 		}
-	}
 
-	// 서버 상태 응답 확인
-	var status StatusResponse
-	if err := json.Unmarshal(data, &status); err == nil {
-		if status.Status == "UP" {
-			return nil, nil
-		} else if status.Status == "DOWN" {
-			if err := c.Reconnect(); err != nil {
-				return nil, fmt.Errorf("서버 다운으로 인한 재연결 실패: %v", err)
+		// 서버 상태 응답 확인
+		var status StatusResponse
+		if err := json.Unmarshal(data, &status); err == nil {
+			if status.Status == "UP" {
+				return nil, nil
+			} else if status.Status == "DOWN" {
+				if err := c.Reconnect(); err != nil {
+					return nil, fmt.Errorf("서버 다운으로 인한 재연결 실패: %v", err)
+				}
+				return nil, nil
 			}
-			return nil, nil
 		}
-	}
 
-	return data, nil
+		return data, nil
+	}
 }

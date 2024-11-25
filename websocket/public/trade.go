@@ -38,16 +38,19 @@ type Trade struct {
 	ChangePrice      float64           `json:"change_price"`       // 부호 없는 전일 대비 값
 	TradeDate        string            `json:"trade_date"`         // 체결 일자(UTC)
 	TradeTime        string            `json:"trade_time"`         // 체결 시각(UTC)
-	TradeAt          time.Time         // 체결 시각 (trade_timestamp를 KST로 변환)
-	Timestamp        time.Time         // 타임스탬프 (KST)
-	SequentialId     int64             `json:"sequential_id"` // 체결 번호
-	StreamType       common.StreamType `json:"stream_type"`   // 스트림 타입
+	TradeTimestamp   time.Time         `json:"trade_timestamp"`    // 체결 시각 (trade_timestamp를 KST로 변환)
+	Timestamp        time.Time         `json:"timestamp"`          // 타임스탬프 (KST)
+	SequentialId     int64             `json:"sequential_id"`      // 체결 번호
+	StreamType       common.StreamType `json:"stream_type"`        // 스트림 타입
 }
 
 // NewTrade는 UpbitTrade를 내부 Trade 구조체로 변환합니다.
-// UTC 시간을 KST(UTC+9)로 변환하여 저장합니다.
-func NewTrade(u *UpbitTrade) *Trade {
-	kst := time.FixedZone("KST", 9*60*60) // UTC+9
+func NewTrade(u *UpbitTrade, loc *time.Location) *Trade {
+	// loc이 nil인 경우 UTC를 사용
+	if loc == nil {
+		loc = time.UTC
+	}
+
 	return &Trade{
 		Type:       u.Type,
 		Code:       u.Code,
@@ -60,8 +63,8 @@ func NewTrade(u *UpbitTrade) *Trade {
 		ChangePrice:      u.ChangePrice,
 		TradeDate:        u.TradeDate,
 		TradeTime:        u.TradeTime,
-		TradeAt:          time.UnixMilli(u.TradeTimestamp).In(kst),
-		Timestamp:        time.UnixMilli(u.Timestamp).In(kst),
+		TradeTimestamp:   time.UnixMilli(u.TradeTimestamp).In(loc),
+		Timestamp:        time.UnixMilli(u.Timestamp).In(loc),
 		SequentialId:     u.SequentialId,
 		StreamType:       u.StreamType,
 	}
@@ -79,11 +82,11 @@ func ParseTrade(data []byte) (*UpbitTrade, error) {
 
 // GetTrade는 다음 체결 메시지를 기다립니다.
 // 에러가 발생하면 에러를 반환하고, 성공하면 체결 정보를 반환합니다.
-func (c *Client) GetTrade() (*Trade, error) {
+func (c *Client) GetTrade(loc *time.Location) (*Trade, error) {
 	select {
 	case err := <-c.errChan:
 		return nil, err
 	case resp := <-c.tradeChan:
-		return NewTrade(resp), nil
+		return NewTrade(resp, loc), nil
 	}
 }

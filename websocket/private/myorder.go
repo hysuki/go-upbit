@@ -56,16 +56,18 @@ type MyOrder struct {
 	Locked          float64            `json:"locked"`           // 거래에 사용중인 비용
 	ExecutedFunds   float64            `json:"executed_funds"`   // 체결된 금액
 	TimeInForce     common.TimeInForce `json:"time_in_force"`    // IOC, FOK 설정
-	TradeAt         time.Time          // 체결 시각 (trade_timestamp를 KST로 변환)
-	OrderAt         time.Time          // 주문 시각 (order_timestamp를 KST로 변환)
-	Timestamp       time.Time          // 타임스탬프 (KST)
-	StreamType      common.StreamType  `json:"stream_type"` // 스트림 타입
+	TradeTimestamp  time.Time          `json:"trade_timestamp"`  // 체결 시각 (trade_timestamp를 KST로 변환)
+	OrderTimestamp  time.Time          `json:"order_timestamp"`  // 주문 시각 (order_timestamp를 KST로 변환)
+	Timestamp       time.Time          `json:"timestamp"`        // 타임스탬프 (KST)
+	StreamType      common.StreamType  `json:"stream_type"`      // 스트림 타입
 }
 
 // NewMyOrder는 UpbitMyOrder를 내부 MyOrder 구조체로 변환합니다.
-// UTC 시간을 KST(UTC+9)로 변환하여 저장합니다.
-func NewMyOrder(u *UpbitMyOrder) *MyOrder {
-	kst := time.FixedZone("KST", 9*60*60) // UTC+9
+func NewMyOrder(u *UpbitMyOrder, loc *time.Location) *MyOrder {
+	// loc이 nil인 경우 UTC를 사용
+	if loc == nil {
+		loc = time.UTC
+	}
 	return &MyOrder{
 		Type:            u.Type,
 		Code:            u.Code,
@@ -86,9 +88,9 @@ func NewMyOrder(u *UpbitMyOrder) *MyOrder {
 		Locked:          u.Locked,
 		ExecutedFunds:   u.ExecutedFunds,
 		TimeInForce:     u.TimeInForce,
-		TradeAt:         time.UnixMilli(u.TradeTimestamp).In(kst),
-		OrderAt:         time.UnixMilli(u.OrderTimestamp).In(kst),
-		Timestamp:       time.UnixMilli(u.Timestamp).In(kst),
+		TradeTimestamp:  time.UnixMilli(u.TradeTimestamp).In(loc),
+		OrderTimestamp:  time.UnixMilli(u.OrderTimestamp).In(loc),
+		Timestamp:       time.UnixMilli(u.Timestamp).In(loc),
 		StreamType:      u.StreamType,
 	}
 }
@@ -105,11 +107,11 @@ func ParseMyOrder(data []byte) (*UpbitMyOrder, error) {
 
 // GetMyOrder는 다음 주문 메시지를 기다립니다.
 // 에러가 발생하면 에러를 반환하고, 성공하면 주문 정보를 반환합니다.
-func (c *Client) GetMyOrder() (*MyOrder, error) {
+func (c *Client) GetMyOrder(loc *time.Location) (*MyOrder, error) {
 	select {
 	case err := <-c.errChan:
 		return nil, err
 	case resp := <-c.myOrderChan:
-		return NewMyOrder(resp), nil
+		return NewMyOrder(resp, loc), nil
 	}
 }

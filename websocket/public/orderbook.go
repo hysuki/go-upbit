@@ -12,7 +12,7 @@ type UpbitOrderbook struct {
 	Code           string          `json:"code"`            // 마켓 코드
 	TotalAskSize   float64         `json:"total_ask_size"`  // 호가 매도 총 잔량
 	TotalBidSize   float64         `json:"total_bid_size"`  // 호가 매수 총 잔량
-	OrderBookUnits []OrderbookUnit `json:"orderbook_units"` // 호가 정보 목록
+	OrderbookUnits []OrderbookUnit `json:"orderbook_units"` // 호가 정보 목록
 	Timestamp      int64           `json:"timestamp"`       // 타임스탬프
 	Level          float64         `json:"level"`           // 호가 모아보기 단위
 }
@@ -23,9 +23,9 @@ type Orderbook struct {
 	Code           string          `json:"code"`            // 마켓 코드
 	TotalAskSize   float64         `json:"total_ask_size"`  // 호가 매도 총 잔량
 	TotalBidSize   float64         `json:"total_bid_size"`  // 호가 매수 총 잔량
-	OrderBookUnits []OrderbookUnit `json:"orderbook_units"` // 호가 정보 목록
-	Timestamp      time.Time       // 타임스탬프 (KST)
-	Level          float64         `json:"level"` // 호가 모아보기 단위
+	OrderbookUnits []OrderbookUnit `json:"orderbook_units"` // 호가 정보 목록
+	Timestamp      time.Time       `json:"timestamp"`       // 타임스탬프 (KST)
+	Level          float64         `json:"level"`           // 호가 모아보기 단위
 }
 
 // OrderbookUnit은 내부적으로 사용하기 위한 개별 호가 정보 구조체입니다.
@@ -37,12 +37,14 @@ type OrderbookUnit struct {
 }
 
 // NewOrderbook은 UpbitOrderbook을 내부 Orderbook 구조체로 변환합니다.
-// UTC 시간을 KST(UTC+9)로 변환하여 저장합니다.
-func NewOrderbook(u *UpbitOrderbook) *Orderbook {
-	kst := time.FixedZone("KST", 9*60*60) // UTC+9
+func NewOrderbook(u *UpbitOrderbook, loc *time.Location) *Orderbook {
+	// loc이 nil인 경우 UTC를 사용
+	if loc == nil {
+		loc = time.UTC
+	}
 
-	units := make([]OrderbookUnit, len(u.OrderBookUnits))
-	for i, unit := range u.OrderBookUnits {
+	units := make([]OrderbookUnit, len(u.OrderbookUnits))
+	for i, unit := range u.OrderbookUnits {
 		units[i] = OrderbookUnit{
 			AskPrice: unit.AskPrice,
 			BidPrice: unit.BidPrice,
@@ -56,8 +58,8 @@ func NewOrderbook(u *UpbitOrderbook) *Orderbook {
 		Code:           u.Code,
 		TotalAskSize:   u.TotalAskSize,
 		TotalBidSize:   u.TotalBidSize,
-		OrderBookUnits: units,
-		Timestamp:      time.UnixMilli(u.Timestamp).In(kst),
+		OrderbookUnits: units,
+		Timestamp:      time.UnixMilli(u.Timestamp).In(loc),
 		Level:          u.Level,
 	}
 }
@@ -74,11 +76,11 @@ func ParseOrderBook(data []byte) (*UpbitOrderbook, error) {
 
 // GetOrderBook은 다음 호가 메시지를 기다립니다.
 // 에러가 발생하면 에러를 반환하고, 성공하면 호가 정보를 반환합니다.
-func (c *Client) GetOrderBook() (*Orderbook, error) {
+func (c *Client) GetOrderBook(loc *time.Location) (*Orderbook, error) {
 	select {
 	case err := <-c.errChan:
 		return nil, err
 	case resp := <-c.orderBookChan:
-		return NewOrderbook(resp), nil
+		return NewOrderbook(resp, loc), nil
 	}
 }
